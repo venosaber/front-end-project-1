@@ -7,9 +7,9 @@ import type {Course} from '../../utils/types';
 
 import {useState, useEffect} from 'react';
 import {Loading} from '../../components';
-import {useAuthGuard} from "../../utils/useAuthGuard.ts";
 import {getMethod} from "../../utils/api.ts";
 import {useNavigate} from "react-router-dom";
+import {getValidAccessToken} from "../../router/auth.ts";
 
 function Classes() {
     const navigate = useNavigate();
@@ -18,11 +18,17 @@ function Classes() {
     }
 
     const [courses, setCourses] = useState<Course[]>([]);
+    const [isLoadingCourses, setIsLoadingCourses] = useState(true);
 
-    // always get the newest accessToken
-    const {loading, accessToken} = useAuthGuard();
     useEffect(() => {
         const onMounted = async () => {
+            const accessToken: string | null = await getValidAccessToken();
+            if(!accessToken){
+                console.error("No valid access token, redirecting to login page");
+                navigate('/login');
+                return;
+            }
+
             try{
                 const coursesData: Course[] = await getMethod('/master/class', {
                     headers: {
@@ -32,13 +38,15 @@ function Classes() {
                 setCourses(coursesData);
             }catch (err) {
                 console.error("Error on loading courses: ",err);
+            }finally {
+                setIsLoadingCourses(false);
             }
         }
 
-        if(!loading) onMounted();
-    }, [loading, accessToken]);
+        onMounted();
+    }, []);
 
-    if(loading) return <Loading />
+    if(isLoadingCourses) return <Loading />
 
     return (
         <>

@@ -15,7 +15,7 @@ export default function CircularIndeterminate() {
                 </Box>
 
                 <Box sx={{mt: 2, fontSize: 30, fontWeight: 'bold'}}>
-                    Loading, please wait...
+                    Checking active login status, please wait...
                 </Box>
             </Box>
         </Box>

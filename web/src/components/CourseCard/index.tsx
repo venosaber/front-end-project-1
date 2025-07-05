@@ -12,7 +12,7 @@ const CourseCard = ({course}: {course: Course}) => {
     const navigate = useNavigate();
 
     const onEnterClass = (course: Course) => {
-        navigate(`/class/${course.id}`, { state: { className: course.name } });
+        navigate(`/class/${course.id}`);
     };
 
     return (

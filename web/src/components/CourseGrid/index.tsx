@@ -19,7 +19,7 @@ function CourseGrid({courses}: {courses: Course[]}) {
     return (
         <Grid container spacing={3}>
             {courses.map((course: Course) => (
-                <Grid key={course.id} size={{sm: 12, md: 6, lg: 4}} width={'100%'}>
+                <Grid key={course.id} size={{xs: 12, md: 6, lg: 4}} width={'100%'}>
                     <CourseCard course={course}/>
                 </Grid>
             ))}

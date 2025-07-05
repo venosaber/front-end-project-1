@@ -1,27 +1,45 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import {Login, Register, Classes, ClassDetail, NewClass, NotFound} from '../pages'
+import {Login, Register, Classes, ClassDetail, NewClass, Profile, NotFound} from '../pages'
+import {default as PublicLayout} from './PublicLayout'
+import {default as ProtectedLayout} from './ProtectedLayout'
+
 
 const router = createBrowserRouter([
     {
-        path: '/login',
-        element: <Login />
+        element: <PublicLayout />,
+        children: [
+            {
+                path: '/login',
+                element: <Login />
+            },
+            {
+                path: '/register',
+                element: <Register />
+            }
+        ]
     },
     {
-        path: '/register',
-        element: <Register />
-    },
-    {
-        path: '/classes',
-        element: <Classes />
-    },
-    {
-        path: '/class/:id/*',
-        element: <ClassDetail />
-    },
-    {
-        path: '/class/add',
-        element: <NewClass />
+        element: <ProtectedLayout />,
+        children: [
+            {
+                path: '/classes',
+                element: <Classes />
+            },
+            {
+                path: '/class/:id/*',
+                element: <ClassDetail />
+            },
+            {
+                path: '/class/add',
+                element: <NewClass />
+            },
+            {
+                path: '/profile',
+                element: <Profile />
+            }
+        ],
+        errorElement: <NotFound />
     },
     {
         path: '*',

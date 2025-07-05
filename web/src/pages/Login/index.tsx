@@ -2,7 +2,7 @@ import {Box, Button, Card, CardMedia, Checkbox, Container,
     FormControlLabel, Grid, Paper, TextField, Typography
 } from "@mui/material";
 import './style.css'
-import {type ChangeEvent, type FocusEvent, type FormEvent, type MouseEvent, useEffect} from "react";
+import {type ChangeEvent, type FocusEvent, type FormEvent, type MouseEvent} from "react";
 import {useState} from "react";
 import {LogoElement} from "../../components";
 import {useNavigate} from "react-router-dom";
@@ -10,8 +10,8 @@ import {IconButton, InputAdornment} from "@mui/material";
 import {Visibility, VisibilityOff} from "@mui/icons-material";
 
 import {postMethod} from "../../utils/api";
-import {setCookie} from "../../utils/auth.ts";
-import {useAuthGuard} from "../../utils/useAuthGuard.ts";
+import {setCookie} from "../../router/auth.ts";
+import { toast } from 'react-toastify';
 
 interface LoginForm {
     email: string,
@@ -21,6 +21,7 @@ interface LoginForm {
 function LoginPage() {
     const navigate = useNavigate();
 
+    /************** form & validation ****************/
     const [formData, setFormData] = useState<LoginForm>({
         email: '',
         password: ''
@@ -91,7 +92,7 @@ function LoginPage() {
         validate[name as keyof LoginForm](value);
     }
 
-    // show - hide password
+    /************** show - hide password *****************/
     const [showPassword, setShowPassword] = useState(false);
     const handleClickShowPassword = () => setShowPassword((show: boolean) => !show);
 
@@ -102,6 +103,7 @@ function LoginPage() {
         event.preventDefault();
     };
 
+    /*************** login *************/
     const [rememberMe, setRememberMe] = useState(false);
 
     const login = async () => {
@@ -109,18 +111,26 @@ function LoginPage() {
             email: formData.email,
             password: formData.password
         }
-        const {access: accessToken, refresh: refreshToken} = await postMethod('/login', payload);
+        const response = await postMethod('/login', payload);
+        if(!response){
+            toast.error('Sai email hoặc mật khẩu!');
+            return;
+        } else {
+            toast.success('Đăng nhập thành công!');
+            const {access: accessToken, refresh: refreshToken} = response;
+            /********* save tokens in cookie ********/
+            setCookie('accessToken', accessToken, 60 * 15); // 15 minutes
 
-        // save tokens in cookie
-        setCookie('accessToken', accessToken, 60 * 15); // 15 minutes
-        setCookie('refreshToken', refreshToken, 60 * 60 * 24 * 7); // a week
-
-        // "remember me" feature
-        if(rememberMe){
-            localStorage.setItem("rememberMe", "true");
-        }else{
-            localStorage.removeItem("rememberMe");
+            // "remember me" feature
+            if(rememberMe){
+                setCookie('refreshToken', refreshToken, 60 * 60 * 24 * 7); // a week
+                localStorage.setItem('rememberMe', 'true');
+            }else{
+                setCookie('refreshToken', refreshToken);  // session cookie
+                localStorage.removeItem('rememberMe');
+            }
         }
+
     }
 
     const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -141,14 +151,6 @@ function LoginPage() {
         await login();
         navigate('/classes');
     }
-
-    const {loading, accessToken} = useAuthGuard();
-    useEffect(() => {
-        const remembered: string | null = localStorage.getItem("rememberMe");
-        if(remembered === "true" && accessToken && !loading){
-            navigate('/classes');
-        }
-    }, [loading, accessToken, navigate]);
 
     return (
         <Container maxWidth={false}
@@ -299,8 +301,6 @@ function LoginPage() {
                                             borderRadius: '8px',
                                             fontWeight: 'bold'
                                         }}
-                                        onClick={() => onSubmit}
-
                                 >Đăng nhập</Button>
 
                                 <Box sx={{textAlign: 'center'}}>

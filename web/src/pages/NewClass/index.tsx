@@ -1,7 +1,10 @@
 import {FHeader} from "../../components";
 import {Box, Button, Container, Grid, Paper, TextField, Typography} from "@mui/material";
 import {useNavigate} from "react-router-dom";
-import {type ChangeEvent, type FocusEvent, type FormEvent, useState} from "react";
+import {type ChangeEvent, type FocusEvent, type FormEvent, useEffect, useState} from "react";
+import {getUserInfo, getValidAccessToken} from "../../router/auth.ts";
+import {postMethod} from "../../utils/api.ts";
+import { toast } from 'react-toastify';
 
 interface NewClassForm {
     name: string,
@@ -75,7 +78,7 @@ function NewClass(){
         validate[name as keyof NewClassForm](value);
     }
 
-    const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // set all touched to true
         const curTouched = {...touched};
@@ -85,15 +88,29 @@ function NewClass(){
         setTouched(curTouched);
 
         // check valid
-        const isValid: boolean =
-            validate.name(formData.name) &&
-            validate.code(formData.code);
-
-        if (!isValid){
-            return;
-        }
+        const isValid: boolean = validate.name(formData.name) && validate.code(formData.code);
+        if (!isValid) return;
 
         // submit logic
+        const payload = {
+            name: formData.name,
+            code: formData.code,
+            users: [userId]
+        }
+
+        const accessToken: string | null = await getValidAccessToken();
+        const response = await postMethod('/master/class', payload, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        })
+        if(!response){
+            toast.error('Tạo lớp học không thành công!');
+        } else {
+            toast.success('Tạo lớp học mới thành công!');
+            navigate('/classes');
+        }
+
     }
 
     const onCancel = () => {
@@ -102,6 +119,22 @@ function NewClass(){
         setTouched({name: false, code: false});
         navigate('/classes');
     }
+
+    const [userId, setUserId] = useState(0);
+    useEffect(()=>{
+       const onMounted = async ()=>{
+           const accessToken: string | null = await getValidAccessToken();
+           if (!accessToken) {
+               console.error("No valid access token, redirecting to login page");
+               navigate('/login');
+               return;
+           }
+
+           const {id} = getUserInfo(accessToken);
+           setUserId(id);
+       }
+       onMounted();
+    },[])
 
     return (
         <>

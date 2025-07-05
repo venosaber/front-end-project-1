@@ -1,4 +1,4 @@
-import { useMemo, cloneElement, useState, useEffect } from "react";
+import { useMemo, cloneElement, useState, useEffect, useCallback } from "react";
 import {Box, List, ListItemButton, ListItemIcon, ListItemText, Typography} from "@mui/material";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -6,8 +6,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import { Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
 import {Loading, MembersContent, OverviewContent, TestsContent} from "..";
 import {getMethod} from "../../utils/api.ts";
-import {useAuthGuard} from "../../utils/useAuthGuard.ts";
 import type {Course, Member} from "../../utils/types";
+import {getValidAccessToken} from "../../router/auth.ts";
+import {useNavigate} from "react-router-dom";
 
 const tests = [
     {id: 1, name: "ĐỀ THI LẦN 1", date: "23-01-2024 04:40:21"},
@@ -22,9 +23,12 @@ const ClassroomLayout = () => {
     const {id: classId } = useParams(); // get classId (id) from URL
     const [className, setClassName] = useState<string>("");
     const [teacherName, setTeacherName] = useState<string>("");
-    const [members, setMembers] = useState<any[]>([]);
+    const [members, setMembers] = useState<Member[]>([]);
+
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     const location = useLocation();
+    const navigate = useNavigate();
 
     // useMemo to only compute again the menuItems when classId changes
     const menuItems = useMemo(() => {
@@ -64,10 +68,30 @@ const ClassroomLayout = () => {
         return currentPath === `${basePath}/${pathSegment}`;
     };
 
-    // always get the newest accessToken
-    const {loading, accessToken} = useAuthGuard();
+    const setCourseData = useCallback((name: string, users: Member[]) => {
+        // swapping to have the teacher at index 0
+        const teacherIndex: number = users.findIndex((user: Member) => user.role === "teacher");
+        const newUsers: Member[] = [...users];
+        if(teacherIndex!==-1){
+            newUsers[teacherIndex] = users[0];
+            newUsers[0] = users[teacherIndex];
+        }
+
+        // set values for props
+        setClassName(name);
+        setTeacherName(newUsers[0].name);
+        setMembers(newUsers);
+    },[]);
+
     useEffect(() => {
         const onMounted = async () => {
+            const accessToken: string | null = await getValidAccessToken();
+            if(!accessToken){
+                console.error("No valid access token, redirecting to login page");
+                navigate('/login');
+                return;
+            }
+
             try{
                 const courseData: Course = await getMethod(`/master/class/${classId}`, {
                     headers: {
@@ -75,28 +99,21 @@ const ClassroomLayout = () => {
                     }
                 });
                 const {name, users } = courseData;
+                setCourseData(name, users);
 
-                // swapping to have the teacher at index 0
-                const teacherIndex: number = users.findIndex((user: Member) => user.role === "teacher");
-                if(teacherIndex!==-1){
-                    const tempMember: Member = users[teacherIndex];
-                    users[teacherIndex] = users[0];
-                    users[0] = tempMember
-                }
-
-                // set values for props
-                setClassName(name);
-                setTeacherName(users[0].name);
-                setMembers(users);
             }catch (err) {
-                console.error("Error on loading courses: ",err);
+                console.error("Error on loading course's data: ",err);
+                navigate('/classes');
+
+            }finally {
+                setIsLoading(false);
             }
         }
 
-        if(!loading) onMounted();
-    }, [loading, accessToken]);
+        onMounted();
+    }, []);
 
-    if(loading) return <Loading />
+    if(isLoading) return <Loading />
 
     return (
         <Box sx={{mt: '64px', height: 'calc(100vh - 64px)', display: 'flex', backgroundColor: '#f5f5f5'}}>
