@@ -17,7 +17,7 @@ const CourseCard = ({course}: { course: Course }) => {
         navigate(`/class/${course.id}`);
     };
 
-    const baseUrl = window.location.origin;
+    const baseUrl: string = window.location.origin;
     const linkToInvite = `${baseUrl}/invite?class=${course.id}`
     const onCopyLink = () => {
         navigator.clipboard.writeText(linkToInvite).then(() => {
@@ -26,7 +26,7 @@ const CourseCard = ({course}: { course: Course }) => {
             toast.error('Sao chép thất bại !');
             console.error('Failed to copy link to clipboard: ', err);
         })
-    }
+    };
 
     return (
         <Card

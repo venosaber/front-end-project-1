@@ -1,12 +1,12 @@
-import { useMemo, cloneElement, useState, useEffect, useCallback } from "react";
+import { useMemo, cloneElement, useState, useEffect} from "react";
 import {Box, List, ListItemButton, ListItemIcon, ListItemText, Typography} from "@mui/material";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PeopleIcon from '@mui/icons-material/People';
 import { Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
-import {Loading, MembersContent, OverviewContent, TestsContent} from "..";
+import {Loading, MembersContent, OverviewContent, ExamsContent} from "..";
 import {getMethod} from "../../utils/api.ts";
-import type {Course, Member} from "../../utils/types";
+import type {Course} from "../../utils/types";
 import {getValidAccessToken} from "../../router/auth.ts";
 import {useNavigate} from "react-router-dom";
 
@@ -21,9 +21,12 @@ const tests = [
 const ClassroomLayout = () => {
 
     const {id: classId } = useParams(); // get classId (id) from URL
-    const [className, setClassName] = useState<string>("");
-    const [teacherName, setTeacherName] = useState<string>("");
-    const [members, setMembers] = useState<Member[]>([]);
+    const [course, setCourse] = useState<Course>({
+        id: 0,
+        code: '',
+        name: '',
+        users: []
+    });
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -68,21 +71,6 @@ const ClassroomLayout = () => {
         return currentPath === `${basePath}/${pathSegment}`;
     };
 
-    const setCourseData = useCallback((name: string, users: Member[]) => {
-        // swapping to have the teacher at index 0
-        const teacherIndex: number = users.findIndex((user: Member) => user.role === "teacher");
-        const newUsers: Member[] = [...users];
-        if(teacherIndex!==-1){
-            newUsers[teacherIndex] = users[0];
-            newUsers[0] = users[teacherIndex];
-        }
-
-        // set values for props
-        setClassName(name);
-        setTeacherName(newUsers[0].name);
-        setMembers(newUsers);
-    },[]);
-
     useEffect(() => {
         const onMounted = async () => {
             const accessToken: string | null = await getValidAccessToken();
@@ -98,8 +86,7 @@ const ClassroomLayout = () => {
                         Authorization: `Bearer ${accessToken}`
                     }
                 });
-                const {name, users } = courseData;
-                setCourseData(name, users);
+                setCourse(courseData);
 
             }catch (err) {
                 console.error("Error on loading course's data: ",err);
@@ -147,9 +134,11 @@ const ClassroomLayout = () => {
 
             <Box component="main" sx={{flexGrow: 1, p: 3, overflowY: 'auto'}}>
                 <Routes>
-                    <Route index element={<OverviewContent className={className} teacherName={teacherName} members={members} tests={tests}/>} />
-                    <Route path="exam" element={<TestsContent tests={tests}/>} />
-                    <Route path="member" element={<MembersContent members={members }/>} />
+                    <Route index element={<OverviewContent
+                        course={course}
+                        tests={tests}/>} />
+                    <Route path="exam" element={<ExamsContent tests={tests}/>} />
+                    <Route path="member" element={<MembersContent course={course}/>} />
                 </Routes>
             </Box>
         </Box>
