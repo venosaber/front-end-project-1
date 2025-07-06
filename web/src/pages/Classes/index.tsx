@@ -9,7 +9,7 @@ import {useState, useEffect} from 'react';
 import {Loading} from '../../components';
 import {getMethod} from "../../utils/api.ts";
 import {useNavigate} from "react-router-dom";
-import {getValidAccessToken} from "../../router/auth.ts";
+import {getUserInfo, getValidAccessToken} from "../../router/auth.ts";
 
 function Classes() {
     const navigate = useNavigate();
@@ -17,6 +17,8 @@ function Classes() {
         navigate('/class/add');
     }
 
+    const [user, setUser] = useState({name: '', role: ''});
+    const displayAddClassButton = user.role === 'teacher'?'inline-flex':'none';
     const [courses, setCourses] = useState<Course[]>([]);
     const [isLoadingCourses, setIsLoadingCourses] = useState(true);
 
@@ -28,6 +30,9 @@ function Classes() {
                 navigate('/login');
                 return;
             }
+
+            const {name, role} = getUserInfo(accessToken);
+            setUser({name, role});
 
             try{
                 const coursesData: Course[] = await getMethod('/master/class', {
@@ -103,6 +108,7 @@ function Classes() {
                                 '&:hover': {
                                     backgroundColor: '#e0b028',
                                 },
+                                display: displayAddClassButton
                             }}
                         >
                             Thêm lớp học

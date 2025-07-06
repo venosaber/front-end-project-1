@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import {Login, Register, Classes, ClassDetail, NewClass, Profile, NotFound} from '../pages'
+import {Login, Register, Classes, ClassDetail, NewClass, Profile, Invite, NotFound} from '../pages'
 import {default as PublicLayout} from './PublicLayout'
 import {default as ProtectedLayout} from './ProtectedLayout'
 
@@ -40,6 +40,10 @@ const router = createBrowserRouter([
             }
         ],
         errorElement: <NotFound />
+    },
+    {
+        path: '/invite',
+        element: <Invite />
     },
     {
         path: '*',

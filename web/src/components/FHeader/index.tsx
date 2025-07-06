@@ -124,6 +124,7 @@ export default function DrawerAppBar() {
     /************** Set classname, username, role label ****************/
     const [className, setClassName] = useState<string>('');
     const [user, setUser] = useState({name: '', role: ''});
+    const displayAddClassButton = user.role === 'teacher'?'inline-flex':'none';
     const {id} = useParams();
 
     useEffect(() => {
@@ -136,6 +137,9 @@ export default function DrawerAppBar() {
             }
 
             try {
+                const {name, role} = getUserInfo(accessToken);
+                setUser({name, role});
+
                 // the ClassDetail page has an id, the Classes page doesn't
                 if (id) {
                     const {name} = await getMethod(`/master/class/${id}`, {
@@ -146,8 +150,6 @@ export default function DrawerAppBar() {
                     setClassName(name);
                 }
 
-                const {name, role} = getUserInfo(accessToken);
-                setUser({name, role});
             } catch (err) {
                 console.error("Error on loading data: ", err);
             }
@@ -231,7 +233,8 @@ export default function DrawerAppBar() {
                                 '&:hover': {
                                     borderColor: '#1976d2',
                                     backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                                }
+                                },
+                                display: displayAddClassButton
                             }}
                             onClick={() => navigate('/class/add')}
                         >
