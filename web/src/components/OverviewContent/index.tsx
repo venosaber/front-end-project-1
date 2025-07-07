@@ -6,8 +6,7 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import PeopleIcon from "@mui/icons-material/People";
 import type {Member, ExamGroup, Course} from "../../utils/types"
 import {toast} from "react-toastify";
-import MembersContent from "../MembersContent";
-import RecentActivity from "../RecentActivity";
+import {RecentActivity, MembersContent} from "..";
 
 interface OverviewContentProps {
     course: Course

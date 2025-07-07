@@ -3,7 +3,6 @@ import type {ChangeEvent} from 'react';
 import {Box, Button, Grid, InputAdornment, Paper, TextField, Typography} from '@mui/material';
 import {Add as AddIcon, Description as DescriptionIcon, Search as SearchIcon} from '@mui/icons-material';
 import type {ExamGroup, Course} from '../../utils/types';
-import {styled} from "@mui/material/styles";
 
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
@@ -13,7 +12,7 @@ import type {PickerValue} from "@mui/x-date-pickers/internals";
 import {getMethod, postMethod} from "../../utils/api.ts";
 import {toast} from "react-toastify";
 import {getValidAccessToken} from "../../router/auth.ts";
-import {useNavigate} from "react-router-dom"
+import {useNavigate, Link} from "react-router-dom";
 
 interface ExamsContentProps {
     course: Course
@@ -160,14 +159,14 @@ export default function ExamsContent({course}: ExamsContentProps) {
             is_save_local: true
         }
         const accessToken: string | null = await getValidAccessToken();
-        const response = await postMethod('/exam_group', payload,{
+        const response = await postMethod('/exam_group', payload, {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        if(!response){
+        if (!response) {
             toast.error('Tạo bài thi thất bại, hãy thử lại!');
-        }else{
+        } else {
             toast.success('Tạo bài thi thành công!');
             handleCloseDialog();
             setFormData({name: '', awaitTime: '', startTime: ''});
@@ -178,9 +177,9 @@ export default function ExamsContent({course}: ExamsContentProps) {
     const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
     const openExamGroups: ExamGroup[] = examGroups.filter(examGroup => new Date(examGroup.start_time) <= new Date());
     const notOpenExamGroups: ExamGroup[] = examGroups.filter(examGroup => new Date(examGroup.start_time) > new Date());
-    const onMounted = async ()=> {
+    const onMounted = async () => {
         const accessToken: string | null = await getValidAccessToken();
-        if(!accessToken){
+        if (!accessToken) {
             console.error("No valid access token, redirecting to login page");
             navigate('/login');
             return;
@@ -261,8 +260,7 @@ export default function ExamsContent({course}: ExamsContentProps) {
                         Bài thi đang diễn ra
                     </Typography>
 
-                    <ExamGroupsGrid examGroups={openExamGroups}/>
-
+                    <ExamGroupsGrid examGroups={openExamGroups} classId={course.id}/>
                 </Box>
 
                 {/* Not Active Tests Section */}
@@ -276,9 +274,9 @@ export default function ExamsContent({course}: ExamsContentProps) {
                         Bài thi chưa bắt đầu
                     </Typography>
 
-                    <ExamGroupsGrid examGroups={notOpenExamGroups}/>
-
+                    <ExamGroupsGrid examGroups={notOpenExamGroups} classId={course.id}/>
                 </Box>
+
             </Box>
 
             {/* Dark transparent overlay */}
@@ -395,17 +393,7 @@ export default function ExamsContent({course}: ExamsContentProps) {
     );
 }
 
-function ExamGroupsGrid({examGroups}: { examGroups: ExamGroup[] }) {
-    const Item = styled(Paper)(({theme}) => ({
-        backgroundColor: '#fff',
-        ...theme.typography.body2,
-        padding: theme.spacing(1),
-        textAlign: 'center',
-        color: (theme.vars ?? theme).palette.text.secondary,
-        ...theme.applyStyles('dark', {
-            backgroundColor: '#1A2027',
-        }),
-    }));
+function ExamGroupsGrid({examGroups, classId}: { examGroups: ExamGroup[], classId: number }) {
 
     return (
         <>
@@ -413,12 +401,14 @@ function ExamGroupsGrid({examGroups}: { examGroups: ExamGroup[] }) {
                 {examGroups.length === 0 && (<>0</>)}
                 {examGroups.map((examGroup: ExamGroup) => (
                     <Grid size={{xs: 12, md: 6, lg: 4}} key={examGroup.id} sx={{borderLeft: '5px solid #0000ff'}}>
-                        <Item>
-                            <Paper elevation={0}>
+
+                        <Paper elevation={0}>
+                            <Link to={`/class/${classId}/exam/${examGroup.id}`}
+                                  style={{textDecoration: 'none', color: "#000000"}}
+                            >
                                 <Box
                                     sx={{
                                         display: 'flex',
-                                        alignItems: 'flex-start',
                                         gap: '20px',
                                         p: 2,
                                         mr: 2
@@ -441,10 +431,11 @@ function ExamGroupsGrid({examGroups}: { examGroups: ExamGroup[] }) {
                                             Ngày bắt đầu: {examGroup.start_time}
                                         </Typography>
                                     </Box>
-                                </Box>
 
-                            </Paper>
-                        </Item>
+                                </Box>
+                            </Link>
+                        </Paper>
+
                     </Grid>
                 ))}
             </Grid>

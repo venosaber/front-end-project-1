@@ -4,7 +4,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PeopleIcon from '@mui/icons-material/People';
 import { Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
-import {Loading, MembersContent, OverviewContent, ExamsContent} from "..";
+import {Loading, MembersContent, OverviewContent, ExamsContent, ExamDetail} from "..";
 import {getMethod} from "../../utils/api.ts";
 import type {Course, ExamGroup} from "../../utils/types";
 import {getValidAccessToken} from "../../router/auth.ts";
@@ -141,6 +141,7 @@ const ClassroomLayout = () => {
                         examGroups={examGroups}/>} />
                     <Route path="exam" element={<ExamsContent course={course}/>} />
                     <Route path="member" element={<MembersContent course={course}/>} />
+                    <Route path="exam/:examGroupId" element={<ExamDetail />} />
                 </Routes>
             </Box>
         </Box>

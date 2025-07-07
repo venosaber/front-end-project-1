@@ -36,3 +36,30 @@ export interface ExamGroup {
     is_once: boolean,
     is_save_local: boolean
 }
+
+export interface Exam{
+    id: number,
+    name: string,
+    code: string,
+    exam_group: number,
+    number_of_question: number,
+    total_time: number,
+    correct_answer: {},
+    questions: Question[],
+    description: string,
+    file: File
+}
+
+export interface Question{
+    type: string,
+    correct_answer: string,
+    index: number,
+    id: number
+}
+
+export interface File{
+    id: number | null,
+    url?: string,
+    payload: string,
+    deleted_questions: number[]
+}
