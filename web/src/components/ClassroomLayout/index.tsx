@@ -6,17 +6,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import { Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
 import {Loading, MembersContent, OverviewContent, ExamsContent} from "..";
 import {getMethod} from "../../utils/api.ts";
-import type {Course} from "../../utils/types";
+import type {Course, ExamGroup} from "../../utils/types";
 import {getValidAccessToken} from "../../router/auth.ts";
 import {useNavigate} from "react-router-dom";
-
-const tests = [
-    {id: 1, name: "ĐỀ THI LẦN 1", date: "23-01-2024 04:40:21"},
-    {id: 2, name: "Thi thu lan 2", date: "26-01-2024 10:59:23"},
-    {id: 3, name: "Thu Thu Lan 3", date: "28-01-2024 10:21:55"},
-    {id: 4, name: "Thi Thu 4", date: "30-01-2024 09:04:04"},
-    {id: 5, name: "Thu Thi 5", date: "22-04-2024 06:24:49"},
-];
 
 const ClassroomLayout = () => {
 
@@ -27,6 +19,8 @@ const ClassroomLayout = () => {
         name: '',
         users: []
     });
+
+    const [examGroups, setExamGroups] = useState<ExamGroup[]>([])
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -81,12 +75,20 @@ const ClassroomLayout = () => {
             }
 
             try{
-                const courseData: Course = await getMethod(`/master/class/${classId}`, {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`
-                    }
-                });
+                const [courseData, examGroupsData] = await Promise.all([
+                    getMethod(`/master/class/${classId}`, {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    }),
+                    getMethod(`/exam_group?class_id=${classId}`, {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    })
+                ]);
                 setCourse(courseData);
+                setExamGroups(examGroupsData);
 
             }catch (err) {
                 console.error("Error on loading course's data: ",err);
@@ -136,8 +138,8 @@ const ClassroomLayout = () => {
                 <Routes>
                     <Route index element={<OverviewContent
                         course={course}
-                        tests={tests}/>} />
-                    <Route path="exam" element={<ExamsContent tests={tests}/>} />
+                        examGroups={examGroups}/>} />
+                    <Route path="exam" element={<ExamsContent course={course}/>} />
                     <Route path="member" element={<MembersContent course={course}/>} />
                 </Routes>
             </Box>

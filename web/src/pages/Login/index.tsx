@@ -114,7 +114,6 @@ function LoginPage() {
         const response = await postMethod('/login', payload);
         if(!response){
             toast.error('Sai email hoặc mật khẩu!');
-            return;
         } else {
             toast.success('Đăng nhập thành công!');
             const {access: accessToken, refresh: refreshToken} = response;

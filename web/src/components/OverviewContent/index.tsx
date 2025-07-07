@@ -4,17 +4,17 @@ import {
 import {ContentCopy as ContentCopyIcon} from '@mui/icons-material';
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PeopleIcon from "@mui/icons-material/People";
-import type {Member, Test, Course} from "../../utils/types"
+import type {Member, ExamGroup, Course} from "../../utils/types"
 import {toast} from "react-toastify";
 import MembersContent from "../MembersContent";
 import RecentActivity from "../RecentActivity";
 
 interface OverviewContentProps {
     course: Course
-    tests: Test[]
+    examGroups: ExamGroup[]
 }
 
-export default function OverviewContent({course, tests}: OverviewContentProps) {
+export default function OverviewContent({course, examGroups}: OverviewContentProps) {
 
     // swapping to have teachers at the head of the array
     const users: Member[] = course.users;
@@ -125,7 +125,7 @@ export default function OverviewContent({course, tests}: OverviewContentProps) {
                                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                                     <PeopleIcon sx={{color: '#3498db', mr: 2, fontSize: 48}}/>
                                     <Typography variant="h5" fontWeight="medium">
-                                        {tests.length} Bài Kiểm Tra
+                                        {examGroups.length} Bài Kiểm Tra
                                     </Typography>
                                 </Box>
                             </Paper>
@@ -137,7 +137,7 @@ export default function OverviewContent({course, tests}: OverviewContentProps) {
                 </Box>
 
                 {/* Recent Activity section */}
-                <RecentActivity tests={tests} />
+                <RecentActivity examGroups={examGroups} />
             </Box>
         </>
     )
