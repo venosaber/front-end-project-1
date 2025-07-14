@@ -1,178 +1,29 @@
-import {type FocusEvent, type FormEvent, useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {ChangeEvent} from 'react';
 import {Box, Button, Grid, InputAdornment, Paper, TextField, Typography} from '@mui/material';
 import {Add as AddIcon, Description as DescriptionIcon, Search as SearchIcon} from '@mui/icons-material';
 import type {ExamGroup, Course} from '../../utils/types';
 
-import {DatePicker} from '@mui/x-date-pickers/DatePicker';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import type {PickerValue} from "@mui/x-date-pickers/internals";
-import {getMethod, postMethod} from "../../utils/api.ts";
-import {toast} from "react-toastify";
+import {getMethod} from "../../utils/api.ts";
 import {getValidAccessToken} from "../../router/auth.ts";
-import {useNavigate, Link} from "react-router-dom";
+import {useNavigate, Link, type NavigateFunction} from "react-router-dom";
+import {ExamGroupDialog} from "..";
 
-interface ExamsContentProps {
-    course: Course
-}
+export default function ExamsContent({course}: { course: Course }) {
+    const navigate: NavigateFunction = useNavigate();
+    const {id: courseId} = course;
 
-interface ExamGroupForm {
-    name: string,
-    awaitTime: string,
-    startTime: string
-}
-
-export default function ExamsContent({course}: ExamsContentProps) {
-    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-
-    const [isOpenDialog, setIsOpenDialog] = useState(false);
-
-    // Handle search input change
     const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(event.target.value);
     };
 
-    const handleCreateTest = () => {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isOpenDialog, setIsOpenDialog] = useState(false);
+    const handleCreateExamGroup = () => {
         setIsOpenDialog(true);
     };
-
-    const handleCloseDialog = () => {
-        setIsOpenDialog(false);
-        setFormData({name: '', awaitTime: '', startTime: ''});
-
-    }
-
-    /*************** form & validation *****************/
-    const [formData, setFormData] = useState<ExamGroupForm>({
-        name: '',
-        awaitTime: '',
-        startTime: ''
-    });
-
-    const [helperTexts, setHelperTexts] = useState({
-        name: '',
-        awaitTime: '',
-        startTime: ''
-    });
-
-    const [touched, setTouched] = useState({
-        name: false,
-        awaitTime: false,
-        startTime: false
-    });
-
-    const validate = {
-        name: (value: string) => {
-            if (!value) {
-                setHelperTexts(prev => ({...prev, name: 'Vui lòng nhập tên bài thi!'}));
-                return false;
-            }
-            setHelperTexts(prev => ({...prev, name: ''}));
-            return true;
-        },
-
-        awaitTime: (value: string) => {
-            if (!value) {
-                setHelperTexts(prev => ({...prev, awaitTime: 'Vui lòng nhập thời gian!'}));
-                return false;
-            }
-
-            if (isNaN(Number(value))) {
-                setHelperTexts(prev => ({...prev, awaitTime: 'Phải nhập giá trị số!'}));
-                return false;
-            }
-
-            setHelperTexts(prev => ({...prev, awaitTime: ''}));
-            return true;
-        },
-
-        startTime: (value: string) => {
-            if (!value) {
-                setHelperTexts(prev => ({...prev, startTime: 'Vui lòng nhập thời gian bắt đầu!'}));
-                return false;
-            }
-
-            setHelperTexts(prev => ({...prev, startTime: ''}));
-            return true;
-        }
-    }
-
-    const onBlur = (e: FocusEvent<HTMLInputElement>) => {
-        setTouched({
-            ...touched,
-            [e.target.name]: true
-        })
-    };
-
-    const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
-        const {name, value} = e.target;
-        onBlur(e);
-        validate[name as keyof ExamGroupForm](value);
-    }
-
-    const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const {name, value} = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
-
-        validate[name as keyof ExamGroupForm](value);
-    }
-
-    const onChangeStartTime = (newValue: PickerValue) => {
-        setFormData({
-            ...formData,
-            startTime: newValue?.format('YYYY-MM-DD') ?? ''
-        })
-
-        validate.startTime(newValue?.format('YYYY-MM-DD') ?? '');
-    }
-
-    const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        // set all touched to true
-        const curTouched = {...touched};
-        Object.keys(touched).forEach((key: string) => {
-            curTouched[key as keyof ExamGroupForm] = true;
-        })
-        setTouched(curTouched);
-
-        // check valid
-        const isValid: boolean =
-            validate.name(formData.name) &&
-            validate.awaitTime(formData.awaitTime) &&
-            validate.startTime(formData.startTime);
-
-        if (!isValid) return;
-
-        // submit logic
-        const payload = {
-            name: formData.name,
-            class_id: course.id,
-            start_time: formData.startTime,
-            await_time: Number(formData.awaitTime) * 60,
-            is_once: true,
-            is_save_local: true
-        }
-        const accessToken: string | null = await getValidAccessToken();
-        const response = await postMethod('/exam_group', payload, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
-        if (!response) {
-            toast.error('Tạo bài thi thất bại, hãy thử lại!');
-        } else {
-            toast.success('Tạo bài thi thành công!');
-            handleCloseDialog();
-            setFormData({name: '', awaitTime: '', startTime: ''});
-            await onMounted();
-        }
-    }
 
     const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
     const openExamGroups: ExamGroup[] = examGroups.filter(examGroup => new Date(examGroup.start_time) <= new Date());
@@ -242,7 +93,7 @@ export default function ExamsContent({course}: ExamsContentProps) {
                             variant="contained"
                             color="primary"
                             startIcon={<AddIcon/>}
-                            onClick={handleCreateTest}
+                            onClick={handleCreateExamGroup}
                         >
                             Tạo bài thi
                         </Button>
@@ -279,116 +130,14 @@ export default function ExamsContent({course}: ExamsContentProps) {
 
             </Box>
 
-            {/* Dark transparent overlay */}
-            <Box sx={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                zIndex: 1000,
-
-                display: isOpenDialog ? 'block' : 'none'
-            }}
-                 onClick={handleCloseDialog}
+            <ExamGroupDialog courseId={courseId}
+                             isOpenDialog={isOpenDialog}
+                             setIsOpenDialog={setIsOpenDialog}
+                             onMounted={onMounted}
+                             isDeleting={isDeleting}
+                             setIsDeleting={setIsDeleting}
             />
 
-            {/* Dialog content */}
-            <Box sx={{
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '90%',
-                maxWidth: '450px',
-                backgroundColor: 'background.paper',
-                borderRadius: '10px',
-                zIndex: 1001,
-                p: 2,
-
-                display: isOpenDialog ? 'block' : 'none'
-            }}>
-                <Typography variant="h5" component="h2" sx={{
-                    fontWeight: 'bold',
-                    mb: 1
-                }}>
-                    Tạo bài thi mới
-                </Typography>
-
-                {/*  Exam group creation form  */}
-                <Box component={'form'} sx={{width: '100%'}}
-                     onSubmit={onSubmit}
-                >
-                    <Typography>Tên bài thi <span style={{color: "#ff0000"}}>*</span></Typography>
-                    <TextField fullWidth size={'small'} sx={{my: 1}}
-                               placeholder={"Nhập tên bài thi"}
-
-                               name={"name"}
-                               value={formData.name}
-                               onChange={onChange}
-                               onBlur={handleBlur}
-                               error={touched.name && Boolean(helperTexts.name)}
-                               helperText={touched.name && helperTexts.name}
-                    />
-
-                    <Typography>Thời gian giữa các bài thi (phút)
-                        <span style={{color: "#ff0000"}}> *</span></Typography>
-                    <TextField fullWidth size={'small'} sx={{my: 1}}
-                               placeholder={"Nhập thời gian"}
-
-                               name={"awaitTime"}
-                               value={formData.awaitTime}
-                               onChange={onChange}
-                               onBlur={handleBlur}
-                               error={touched.awaitTime && Boolean(helperTexts.awaitTime)}
-                               helperText={touched.awaitTime && helperTexts.awaitTime}
-                    />
-
-                    <Typography>Thời gian bắt đầu <span style={{color: "#ff0000"}}>*</span></Typography>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                            name={"startTime"}
-                            value={formData.startTime ? dayjs(formData.startTime, 'YYYY-MM-DD') : null}
-                            onChange={onChangeStartTime}
-                            // CSS to look like TextField
-                            slotProps={{
-                                textField: {
-                                    size: 'small',
-                                    fullWidth: true,
-                                    error: touched.startTime && Boolean(helperTexts.startTime),
-                                    helperText: touched.startTime && helperTexts.startTime,
-                                    sx: {my: 1}
-                                }
-                            }}
-                        />
-                    </LocalizationProvider>
-
-                    {/* Buttons */}
-                    <Grid container sx={{mt: 2, mb: 2}} spacing={2}>
-
-                        <Grid size={{xs: 6}}>
-                            <Button
-                                fullWidth variant={'contained'}
-                                color={'primary'}
-                                type={'submit'}
-                            >
-                                Tạo mới</Button>
-                        </Grid>
-
-                        <Grid size={{xs: 6}}>
-                            <Button
-                                fullWidth variant={'outlined'}
-                                color={'primary'}
-                                onClick={handleCloseDialog}
-                            >Hủy</Button>
-                        </Grid>
-
-                    </Grid>
-
-                </Box>
-
-            </Box>
         </>
     );
 }
@@ -428,7 +177,7 @@ function ExamGroupsGrid({examGroups, classId}: { examGroups: ExamGroup[], classI
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary"
                                                     fontWeight={'medium'}>
-                                            Ngày bắt đầu: {examGroup.start_time}
+                                            Ngày bắt đầu: {dayjs(examGroup.start_time).format('DD/MM/YYYY')}
                                         </Typography>
                                     </Box>
 

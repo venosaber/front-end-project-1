@@ -4,6 +4,7 @@ import {Login, Register, Classes, ClassDetail, NewClass, Profile, Invite, NotFou
 import {default as PublicLayout} from './PublicLayout'
 import {default as ProtectedLayout} from './ProtectedLayout'
 
+import {default as TestPage} from '../components/Testing'
 
 const router = createBrowserRouter([
     {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
     {
         path: '/invite',
         element: <Invite />
+    },
+    {
+        path: '/testing',
+        element: <TestPage />
     },
     {
         path: '*',

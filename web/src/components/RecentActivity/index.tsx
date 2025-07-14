@@ -3,6 +3,7 @@ import {
     NotificationsOutlined as NotificationIcon,
     AccessTime as ClockIcon,
 } from '@mui/icons-material';
+import dayjs from 'dayjs';
 
 import type {ExamGroup} from '../../utils/types';
 
@@ -39,7 +40,7 @@ export default function RecentActivity({examGroups}: {examGroups: ExamGroup[]}) 
                                 <Box sx={{display: 'flex', alignItems: 'center', mt: 0.5}}>
                                     <ClockIcon sx={{fontSize: 14, mr: 0.5, color: 'text.secondary'}}/>
                                     <Typography variant="caption" color="text.secondary">
-                                        {examGroup.start_time}
+                                        {dayjs(examGroup.created_at).format("DD-MM-YYYY HH:mm:ss")}
                                     </Typography>
                                 </Box>
                             }

@@ -27,16 +27,16 @@ export default function Profile() {
     const navigate = useNavigate();
 
     /********* convert to base 64 (images) ************/
-    // const fileToBase64 = (file: File): Promise<string> => {
-    //     return new Promise((resolve, reject) => {
-    //         const reader = new FileReader();
-    //         reader.onload = () => {
-    //             resolve(reader.result as string);
-    //         };
-    //         reader.onerror = reject;
-    //         reader.readAsDataURL(file);
-    //     });
-    // };
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result as string);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
 
     const [infoFormData, setInfoFormData] = useState<InfoForm>({
         name: '',
@@ -198,7 +198,7 @@ export default function Profile() {
         }
     }
 
-    const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         const file: File | null = event.target.files?.[0] ?? null;
         if (file) {
             const url: string = URL.createObjectURL(file);
@@ -208,7 +208,7 @@ export default function Profile() {
                 avata: {
                     id: null,
                     url,
-                    payload: file
+                    payload: await fileToBase64(file)
                 }
             });
         }
@@ -228,15 +228,6 @@ export default function Profile() {
 
         // submit logic
         const payload = {...infoFormData, avata: null};
-
-        /****** Convert avatar file to base64 if exists ******/
-        // if (infoFormData.avata?.payload instanceof File) {
-        //     payload.avata = {
-        //         ...payload.avata,
-        //         id: null,
-        //         payload: await fileToBase64(infoFormData.avata.payload) // convert File -> base64 string
-        //     };
-        // }
 
         const accessToken: string | null = await getValidAccessToken();
         const response = await putMethod(`/master/user/${userId}`,payload,{

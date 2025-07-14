@@ -15,7 +15,7 @@ export interface Member {
 export interface Avata{
     id: number | null,
     url?: string,
-    payload: File | string | null
+    payload: string | null
 }
 
 export interface User extends Member {
@@ -38,7 +38,7 @@ export interface ExamGroup {
 }
 
 export interface Exam{
-    id: number,
+    id?: number,
     name: string,
     code: string,
     exam_group: number,
@@ -47,19 +47,23 @@ export interface Exam{
     correct_answer: {},
     questions: Question[],
     description: string,
-    file: File
+    file: ExamFile | null
 }
 
 export interface Question{
     type: string,
     correct_answer: string,
     index: number,
-    id: number
+    id?: number | null
 }
 
-export interface File{
+export interface ExamFile{
     id: number | null,
-    url?: string,
-    payload: string,
-    deleted_questions: number[]
+    url: string,
+    payload: string
+}
+
+export interface Action {
+    type: string,
+    payload: any
 }
