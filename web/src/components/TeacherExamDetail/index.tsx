@@ -1,26 +1,24 @@
 import {Box, Button, Grid, Typography} from "@mui/material";
 import {useNavigate, useParams} from "react-router-dom";
-import {useEffect, useState} from "react";
+import {useEffect, useReducer, useState} from "react";
 import type {ChangeEvent} from "react";
-import type {Exam, ExamGroup} from "../../utils/types";
+import type {ExamGroup} from "../../utils/types";
 import {getValidAccessToken} from "../../router/auth.ts";
 import {getMethod} from "../../utils/api.ts";
+import {initState, reducer} from "./teacherReducer.ts";
+import {TeacherAnswers} from '..'
 
-export default function ExamDetail() {
-    const [examFormData, setExamFormData] = useState<Exam>({
-        name: "",
-        code: "",
-        exam_group: 0,
-        number_of_question: 1,
-        total_time: 0,
-        correct_answer: {},
-        questions: [],
-        description: "default",
-        file: null
-    });
+export default function TeacherExamDetail() {
+    const [state, dispatch] = useReducer(reducer, initState);
 
     const navigate = useNavigate();
     const {id, examGroupId, examId} = useParams();
+    let examGroupIdNum = 0;
+    let examIdNum = 0;
+    if (examGroupId !== undefined && examId !== undefined) {
+        examGroupIdNum = Number(examGroupId);
+        examIdNum = Number(examId);
+    }
 
     const handleBackToExamGroups = () => {
         navigate(`/class/${id}/exam`);
@@ -55,18 +53,16 @@ export default function ExamDetail() {
         const response = await fileToBase64(file);
         if (!response) return;
 
-        setExamFormData({
-            ...examFormData,
-            file: {
-                id: null,
-                url: URL.createObjectURL(file),
-                payload: String(response)
-            }
-        })
+        const uploadFile = {
+            id: null,
+            url: URL.createObjectURL(file),
+            payload: String(response)
+        }
+        console.log('send file: ', uploadFile);
+        dispatch({type: 'UPLOAD_FILE', payload: uploadFile});
     }
 
     const [examGroup, setExamGroup] = useState<ExamGroup | null>(null);
-    const [exam, setExam] = useState<Exam | null>(null);
 
     const onMounted = async () => {
         const accessToken: string | null = await getValidAccessToken();
@@ -76,20 +72,27 @@ export default function ExamDetail() {
             return;
         }
 
-        const [examGroupData, examData] = await Promise.all([
-            getMethod(`/exam_group/${examGroupId}`, {
+        // examId already exists => edit mode
+        if(examIdNum !== 0) {
+            const examData = await getMethod(`/exam/${examId}`, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 }
-            }),
-            getMethod(`/exam/${examId}`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            })
-        ]);
+            });
+
+            if(examData.exam_group_id !== examGroupIdNum) {
+                console.error("Invalid exam id");
+                // handleBackToExamGroupDetail();
+            }
+            dispatch({type: 'LOAD_INITIAL_DATA', payload: examData})
+        }
+
+        const examGroupData = await getMethod(`/exam_group/${examGroupId}`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
         setExamGroup(examGroupData);
-        setExam(examData);
     }
     useEffect(() => {
         onMounted();
@@ -99,11 +102,8 @@ export default function ExamDetail() {
         <>
             <Box sx={{
                 height: 'calc(100vh - 112px)',
-                backgroundColor: "yellow",
-
                 display: "flex",
-                flexDirection: "column",
-                overflow: "hidden"
+                flexDirection: "column"
             }}>
                 <Box sx={{display: 'flex', mb: 2, flexShrink: 0}}>
                     <Typography variant="h6" fontWeight="bold"
@@ -136,33 +136,33 @@ export default function ExamDetail() {
                     <Typography variant="h6" fontWeight="bold"
                                 sx={{mr: 2}}>{`>`}</Typography>
 
-                    <Typography variant="h6" fontWeight="bold">Thêm đề bài</Typography>
+                    <Typography variant="h6" fontWeight="bold">
+                        {examIdNum ? state.name : 'Thêm đề bài' }
+                    </Typography>
                 </Box>
 
                 <Box sx={{
                     flexGrow: 1,
                     minHeight: 0,
-                    backgroundColor: "red",
-                    overflow: "hidden"
                 }}>
                     <Grid container spacing={2} sx={{height: "100%"}}>
                         <Grid size={{xs: 12, lg: 6}} sx={{
                             height: '100%',
                             border: '1px dashed #cccccc',
+                            backgroundColor: "#ffffff",
 
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center'
                         }}>
                             {
-                                examFormData?.file?.url ? (
+                                state?.file?.url ? (
                                     <Box sx={{
                                         width: '100%',
-                                        height: '100%',
-                                        overflow: 'hidden' // ensure the scroll handled by iframe
+                                        height: '100%'
                                     }}>
                                         <iframe
-                                            src={examFormData.file.url}
+                                            src={state.file.url}
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
@@ -171,7 +171,7 @@ export default function ExamDetail() {
                                             }}
                                         />
                                     </Box>
-                                ): (
+                                ) : (
                                     <>
                                         <input
                                             id="exam-upload"
@@ -188,6 +188,19 @@ export default function ExamDetail() {
                                     </>
                                 )
                             }
+                        </Grid>
+
+                        <Grid size={{xs: 12, lg: 6}} sx={{
+                            height: '100%',
+                            border: 'none',
+                            overflowY: 'auto',
+                            backgroundColor: "#ffffff",
+
+                        }}>
+                            <TeacherAnswers
+                                handleBackToExamGroupDetail={handleBackToExamGroupDetail}
+                                examGroupIdNum={examGroupIdNum} examIdNum={examIdNum}
+                                state={state} dispatch={dispatch}/>
                         </Grid>
                     </Grid>
                 </Box>

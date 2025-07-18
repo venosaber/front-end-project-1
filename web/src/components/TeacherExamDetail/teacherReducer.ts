@@ -3,8 +3,7 @@ import type {Question, Exam, Action} from '../../utils/types';
 const defaultQuestion = {
     type: 'single-choice',
     correct_answer: '',
-    index: 0,
-    id: null
+    index: 0
 }
 
 export const initState: Exam = {
@@ -16,19 +15,38 @@ export const initState: Exam = {
     correct_answer: {},
     questions: [defaultQuestion],
     description: "default",
-    file: null
+    file: null,
+    deleted_questions: []
 }
 
 const actionHandlers = {
     // load data from API to state
     'LOAD_INITIAL_DATA': (state: Exam, action: Action) => {
-        return {...state, ...action.payload}
+        // convert total time from seconds to minutes
+        const loadedState = {...action.payload};
+        const totalTimeByMinutes: number = action.payload.total_time / 60;
+        return {...state, ...loadedState, total_time: totalTimeByMinutes};
     },
 
-    // change the number of questions
+    // set the name of the exam
+    'SET_NAME': (state: Exam, action: Action) => {
+        return {...state, name: action.payload}
+    },
+
+    // set the code of the exam
+    'SET_CODE': (state: Exam, action: Action) => {
+        return {...state, code: action.payload}
+    },
+
+    // set the total time of the exam
+    'SET_TOTAL_TIME': (state: Exam, action: Action) => {
+        return {...state, total_time: action.payload}
+    },
+
+    // set the number of questions
     'SET_AMOUNT': (state: Exam, action: Action) => {
         const newAmount: number = action.payload;
-        if(newAmount <= 0) return state;
+        if(newAmount <= 0 || isNaN(newAmount)) return state;
         if(newAmount < state.questions.length){
             return {
                 ...state,
@@ -143,8 +161,7 @@ const actionHandlers = {
 
     // handle uploading the file
     'UPLOAD_FILE': (state: Exam, action: Action) => {
-        const {file} = action.payload;
-        return {...state, file}
+        return {...state, file: action.payload};
     }
 }
 

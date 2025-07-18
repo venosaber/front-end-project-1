@@ -47,23 +47,67 @@ export interface Exam{
     correct_answer: {},
     questions: Question[],
     description: string,
-    file: ExamFile | null
+    file: ExamFile | null,
+    deleted_questions: number[]
+}
+
+export interface ExamWithStatus extends Exam{
+    status: string
 }
 
 export interface Question{
     type: string,
     correct_answer: string,
     index: number,
-    id?: number | null
+    id?: number
+}
+
+export interface Answer{
+    questionId: number,
+    questionIndex: number,
+    questionType: string,
+    answer: string
+}
+
+export interface AnswerResult{
+    id: number,
+    question: number,
+    index: number,
+    answer: string,
+    is_correct: boolean[] | null,
+    type: string
 }
 
 export interface ExamFile{
     id: number | null,
-    url: string,
-    payload: string
+    url?: string,
+    payload?: string
+}
+
+export interface ExamDoing{
+    examName: string,
+    examCode: string,
+    examFile: ExamFile,
+    questions: Answer[],
+    timeLeft: number,
+    device: string
+}
+
+export interface ExamResult{
+    id: number,
+    exam: number,
+    user: number,
+    status: string,
+    old_answer: null,
+    answers: [],
+    number_of_question: number,
+    number_of_correct_answer: number,
+    score: number | null,
+    created_at: Date,
+    device: string
 }
 
 export interface Action {
     type: string,
-    payload: any
+    payload?: any
 }

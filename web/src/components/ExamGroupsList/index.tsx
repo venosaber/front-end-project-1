@@ -6,13 +6,14 @@ import type {ExamGroup, Course} from '../../utils/types';
 
 import dayjs from 'dayjs';
 import {getMethod} from "../../utils/api.ts";
-import {getValidAccessToken} from "../../router/auth.ts";
+import {getUserInfo, getValidAccessToken} from "../../router/auth.ts";
 import {useNavigate, Link, type NavigateFunction} from "react-router-dom";
 import {ExamGroupDialog} from "..";
 
 export default function ExamsContent({course}: { course: Course }) {
     const navigate: NavigateFunction = useNavigate();
     const {id: courseId} = course;
+    const [userRole, setUserRole] = useState('student');
 
     const [searchQuery, setSearchQuery] = useState('');
     const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -26,8 +27,20 @@ export default function ExamsContent({course}: { course: Course }) {
     };
 
     const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
-    const openExamGroups: ExamGroup[] = examGroups.filter(examGroup => new Date(examGroup.start_time) <= new Date());
-    const notOpenExamGroups: ExamGroup[] = examGroups.filter(examGroup => new Date(examGroup.start_time) > new Date());
+    function toDateOnly(date: Date): Date {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    const today: Date = toDateOnly(new Date());
+
+    const openExamGroups: ExamGroup[] = examGroups.filter(
+        examGroup => toDateOnly(new Date(examGroup.start_time)) <= today
+    );
+
+    const notOpenExamGroups: ExamGroup[] = examGroups.filter(
+        examGroup => toDateOnly(new Date(examGroup.start_time)) > today
+    );
+
     const onMounted = async () => {
         const accessToken: string | null = await getValidAccessToken();
         if (!accessToken) {
@@ -35,6 +48,9 @@ export default function ExamsContent({course}: { course: Course }) {
             navigate('/login');
             return;
         }
+        const {role} = getUserInfo(accessToken);
+        setUserRole(role);
+
         const examGroupsData: ExamGroup[] = await getMethod(`/exam_group?class_id=${course.id}`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`
@@ -94,6 +110,8 @@ export default function ExamsContent({course}: { course: Course }) {
                             color="primary"
                             startIcon={<AddIcon/>}
                             onClick={handleCreateExamGroup}
+                            // not allowing students to create an exam group
+                            sx={{display: userRole === 'student'?'none':'inline-flex'}}
                         >
                             Tạo bài thi
                         </Button>
@@ -114,8 +132,8 @@ export default function ExamsContent({course}: { course: Course }) {
                     <ExamGroupsGrid examGroups={openExamGroups} classId={course.id}/>
                 </Box>
 
-                {/* Not Active Tests Section */}
-                <Box>
+                {/* Not Active Tests Section - won't allow students to see */}
+                <Box sx={{display: userRole === 'student'?'none':'block'}}>
                     <Typography
                         variant="subtitle1"
                         fontWeight="600"

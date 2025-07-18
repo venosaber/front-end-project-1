@@ -1,19 +1,18 @@
 import {Box, Typography, Button, Grid} from '@mui/material';
 import {Add as AddIcon} from '@mui/icons-material';
 import {useNavigate, useParams} from 'react-router-dom';
-import {useEffect, useState} from 'react';
+import {useState, useEffect} from 'react';
 import type {ExamGroup, Exam} from '../../utils/types';
 import {ExamGroupDialog} from '..';
+import dayjs from 'dayjs';
 import {getValidAccessToken} from "../../router/auth.ts";
 import {getMethod} from "../../utils/api.ts";
-import dayjs from 'dayjs';
 
-export default function ExamGroupDetail() {
+export default function TeacherExamGroup() {
     const navigate = useNavigate();
     const {id, examGroupId} = useParams();
     const courseId: number = Number(id);
-
-    const handleBackToExams = () => {
+    const handleBackToExamGroupsList = () => {
         navigate(`/class/${id}/exam`);
     };
 
@@ -32,8 +31,21 @@ export default function ExamGroupDetail() {
         navigate(`/class/${id}/exam/${examGroupId}/0`);
     }
 
+    const handleEditExam = (examId: number) => {
+        navigate(`/class/${id}/exam/${examGroupId}/${examId}`);
+    }
+
     const [examGroupDetail, setExamGroupDetail] = useState<ExamGroup | undefined>(undefined);
     const [exams, setExams] = useState<Exam[]>([]);
+
+    let examName: string = '';
+    let awaitTime: number = 0;
+    let startTime: string = '';
+    if (examGroupDetail) {
+        examName = examGroupDetail.name;
+        awaitTime = examGroupDetail.await_time / 60;
+        startTime = dayjs(examGroupDetail.start_time).format('DD/MM/YYYY');
+    }
 
     const onMounted = async () => {
         const accessToken: string | null = await getValidAccessToken();
@@ -58,18 +70,10 @@ export default function ExamGroupDetail() {
         setExamGroupDetail(examGroupData);
         setExams(exams);
     }
+
     useEffect(() => {
         onMounted();
-    }, []);
-
-    let examName: string = '';
-    let awaitTime: number = 0;
-    let startTime: string = '';
-    if (examGroupDetail) {
-        examName = examGroupDetail.name;
-        awaitTime = examGroupDetail.await_time / 60;
-        startTime = dayjs(examGroupDetail.start_time).format('DD/MM/YYYY');
-    }
+    },[])
 
     return (
         <>
@@ -82,7 +86,7 @@ export default function ExamGroupDetail() {
                                 },
                                 mr: 2
                             }}
-                            onClick={handleBackToExams}
+                            onClick={handleBackToExamGroupsList}
                 >
                     Danh sách bài thi
                 </Typography>
@@ -127,12 +131,13 @@ export default function ExamGroupDetail() {
             </Box>
 
             {
-                (exams.length === 0) ? (
+                (!exams || exams.length === 0)
+                    ? (
                         <Typography fontWeight={500} sx={{fontSize: 18, mb: 2}}>
                             Chưa có đề bài nào được tải lên
                         </Typography>
                     )
-                    : <ExamsGrid exams={exams} />
+                    : <ExamsGrid exams={exams} handleEditExam={handleEditExam}/>
             }
 
             {/* List of exam results */
@@ -145,23 +150,40 @@ export default function ExamGroupDetail() {
                              isDeleting={isDeleting}
                              setIsDeleting={setIsDeleting}
                              examGroup={examGroupDetail}
-                             onMounted={onMounted} />
+                             onMounted={onMounted}/>
 
         </>
     )
 
 }
 
-function ExamsGrid({exams}: { exams: Exam[] }) {
+function ExamsGrid({exams, handleEditExam}: { exams: Exam[], handleEditExam: (examId: number) => void }) {
     return (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{my: 3}}>
             {
-                exams.map((exam: Exam)=> (
-                    <Grid size={{xs: 12, sm: 6, md: 4}}>
+                exams.map((exam: Exam) => (
+                    <Grid key={exam.id} size={{xs: 12, sm: 6, md: 4}}>
                         <Box sx={{border: '1px dotted #0000ff', borderRadius: '8px', p: 1, backgroundColor: '#ffffff'}}>
-                            <Typography>Đề bài: {exam.name}</Typography>
+                            <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: '5px'
+                            }}>
+                                <Typography sx={{
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: 'calc(100% - 50px)' // limit width
+                                }}>
+                                    Đề bài: {exam.name}
+                                </Typography>
+                                <Button onClick={() => handleEditExam(exam.id!)}>Sửa</Button>
+                            </Box>
+
                             <Typography>Mã đề: {exam.code}</Typography>
-                            <Typography>Thời gian làm bài: {exam.total_time/60} phút</Typography>
+                            <Typography>Thời gian làm bài: {exam.total_time / 60} phút</Typography>
                             <Typography>Số câu hỏi: {exam.number_of_question}</Typography>
                         </Box>
                     </Grid>

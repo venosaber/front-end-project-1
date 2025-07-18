@@ -4,7 +4,8 @@ import {Login, Register, Classes, ClassDetail, NewClass, Profile, Invite, NotFou
 import {default as PublicLayout} from './PublicLayout'
 import {default as ProtectedLayout} from './ProtectedLayout'
 
-import {default as TestPage} from '../components/Testing'
+import {Testing} from '../pages'
+import {StudentExamDetail} from "../components";
 
 const router = createBrowserRouter([
     {
@@ -38,6 +39,16 @@ const router = createBrowserRouter([
             {
                 path: '/profile',
                 element: <Profile />
+            },
+
+            {
+                path: '/class/:id/exam/:examGroupId/doing',
+                element: <StudentExamDetail />
+            },
+
+            {
+                path: '/testing',
+                element: <Testing />
             }
         ],
         errorElement: <NotFound />
@@ -45,10 +56,6 @@ const router = createBrowserRouter([
     {
         path: '/invite',
         element: <Invite />
-    },
-    {
-        path: '/testing',
-        element: <TestPage />
     },
     {
         path: '*',
