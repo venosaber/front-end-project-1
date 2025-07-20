@@ -1,11 +1,10 @@
 import {Box, Button, Grid, Typography} from "@mui/material";
-import type {ExamDoing} from "../../utils/types";
 
 interface StudentExamDialogProps {
     timeLeft: number,
     isOpenDialog: boolean,
     setIsOpenDialog: (isOpenDialog: boolean) => void,
-    onSubmit: () => void,
+    onSubmit: () => Promise<void>,
     handleBackToExamGroupDetail: () => void
 }
 
@@ -16,6 +15,12 @@ export default function StudentExamDialog({
                                               onSubmit,
                                               handleBackToExamGroupDetail
                                           }: StudentExamDialogProps) {
+
+    const onSubmitEarly = async ()=>{
+        await onSubmit();
+        handleBackToExamGroupDetail();
+    }
+
     return (
         <>
             {/* Dark transparent overlay */}
@@ -35,7 +40,7 @@ export default function StudentExamDialog({
             {/* Dialog content */}
             {
                 timeLeft > 0
-                    ? (
+                    ? ( // require user to confirm early submission
                         <Box sx={{
                             position: 'fixed',
                             top: '50%',
@@ -88,14 +93,14 @@ export default function StudentExamDialog({
                                             fontWeight: 600,
                                             borderRadius: '10px',
                                         }}
-                                        onClick={onSubmit}
+                                        onClick={onSubmitEarly}
                                     >
                                         Xác nhận
                                     </Button>
                                 </Grid>
                             </Grid>
                         </Box>
-                    ) : (
+                    ) : ( // guide user to return to the exam group page
                         <Box sx={{
                             position: 'fixed',
                             top: '50%',

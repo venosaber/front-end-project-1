@@ -3,8 +3,8 @@ import { createBrowserRouter } from 'react-router-dom'
 import {Login, Register, Classes, ClassDetail, NewClass, Profile, Invite, NotFound} from '../pages'
 import {default as PublicLayout} from './PublicLayout'
 import {default as ProtectedLayout} from './ProtectedLayout'
+import {default as ExamFlowLayout} from './ExamFlowLayout'
 
-import {Testing} from '../pages'
 import {StudentExamDetail} from "../components";
 
 const router = createBrowserRouter([
@@ -29,10 +29,6 @@ const router = createBrowserRouter([
                 element: <Classes />
             },
             {
-                path: '/class/:id/*',
-                element: <ClassDetail />
-            },
-            {
                 path: '/class/add',
                 element: <NewClass />
             },
@@ -42,13 +38,17 @@ const router = createBrowserRouter([
             },
 
             {
-                path: '/class/:id/exam/:examGroupId/doing',
-                element: <StudentExamDetail />
-            },
-
-            {
-                path: '/testing',
-                element: <Testing />
+                element: <ExamFlowLayout />,
+                children: [
+                    {
+                        path: '/class/:id/*',
+                        element: <ClassDetail />
+                    },
+                    {
+                        path: '/class/:id/exam/:examGroupId/doing',
+                        element: <StudentExamDetail />
+                    },
+                ]
             }
         ],
         errorElement: <NotFound />

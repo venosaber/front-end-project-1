@@ -1,6 +1,6 @@
 import type {Dispatch} from 'react'
 import type {ChangeEvent} from "react";
-import type {ExamDoing, Answer} from '../../utils/types';
+import type {ExamDoing, Answer, Action} from '../../utils/types';
 
 import {
     Grid,
@@ -13,7 +13,7 @@ import {
 
 interface StudentAnswersProps {
     state: ExamDoing,
-    dispatch: Dispatch<any>
+    dispatch: Dispatch<Action>
 }
 
 export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
@@ -29,7 +29,7 @@ export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
                         state.questions.map((question: Answer) =>
                             (
                                 <Grid size={{xs: 6}} key={question.questionId}>
-                                    {QuestionUnit(question)}
+                                    {QuestionUnit(question, dispatch)}
                                 </Grid>
                             ))
                     }
@@ -38,99 +38,96 @@ export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
             </Box>
         </>
     )
+}
 
+function QuestionUnit(question: Answer, dispatch: Dispatch<Action>) {
 
-    function QuestionElement(question: Answer) {
-        const onChangeAnswer = (e: ChangeEvent<HTMLInputElement>) => {
-            const payload = {
-                targetedAnswer: e.target.value,
-                index: question.questionIndex,
-            }
+    return (
+        <Box key={question.questionId} sx={{m: "10px 0 10px 10px "}}>
+            <Grid container spacing={2} style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                <Grid size={{xs: 2}}>
+                    <Typography sx={{fontSize: 20}}>C{question.questionIndex + 1}:</Typography>
+                </Grid>
 
-            switch (question.questionType) {
-                case 'single-choice':
-                    dispatch({type: 'SINGLE_CHANGE_ANSWER', payload: payload});
-                    break;
-                case 'multiple-choice':
-                    if (e.target.checked) {
-                        dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload})
-                    } else {
-                        dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload})
+                <Grid size={{xs: 10}} sx={{display: 'flex'}}>
+                    {
+                        QuestionElement(question, dispatch)
                     }
-                    break;
-                case 'long-response':
-                    dispatch({type: 'LONG_RESPONSE_ANSWER', payload: payload});
-                    break;
-            }
-        }
+                </Grid>
 
-        const options: string[] = ["A", "B", "C", "D"];
+            </Grid>
+        </Box>
+    )
+}
+
+function QuestionElement(question: Answer, dispatch: Dispatch<Action>) {
+    const onChangeAnswer = (e: ChangeEvent<HTMLInputElement>) => {
+        const payload = {
+            targetedAnswer: e.target.value,
+            index: question.questionIndex,
+        }
 
         switch (question.questionType) {
             case 'single-choice':
-                return options.map((option: string, index: number) => {
-                    return (
-                        <Box key={index}>
-                            <Radio name={`question-${question.questionIndex}`}
-                                   onChange={onChangeAnswer}
-                                   checked={question.answer === option}
-                                   id={`question-${question.questionIndex}-${option}`} value={option}/>
-                            <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
-                        </Box>
-                    )
-                });
-
+                dispatch({type: 'SINGLE_CHANGE_ANSWER', payload: payload});
+                break;
             case 'multiple-choice':
-                return options.map((option: string, index: number) => {
-                    return (
-                        <Box key={index}>
-                            <Checkbox name={`question-${question.questionIndex}`}
-                                      onChange={onChangeAnswer}
-                                      checked={question.answer.includes(option)}
-                                      id={`question-${question.questionIndex}-${option}`} value={option}/>
-                            <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
-                        </Box>
-                    )
-                });
-
+                if (e.target.checked) {
+                    dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload})
+                } else {
+                    dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload})
+                }
+                break;
             case 'long-response':
-                return <TextField
-                    fullWidth
-                    size={'small'}
-                    variant="outlined"
-                    value={question.answer}
-                    onChange={onChangeAnswer}
-                    slotProps={{
-                        input: {
-                            style: {whiteSpace: 'nowrap', overflowX: 'auto'}
-                        }
-                    }}
-                />
-
-            default:
-                return <></>
+                dispatch({type: 'LONG_RESPONSE_ANSWER', payload: payload});
+                break;
         }
     }
 
-    function QuestionUnit(question: Answer) {
+    const options: string[] = ["A", "B", "C", "D"];
 
-        return (
-            <Box key={question.questionId} sx={{m: "10px 0 10px 10px "}}>
-                <Grid container spacing={2} style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                    <Grid size={{xs: 2}}>
-                        <Typography sx={{fontSize: 20}}>C{question.questionIndex + 1}:</Typography>
-                    </Grid>
+    switch (question.questionType) {
+        case 'single-choice':
+            return options.map((option: string, index: number) => {
+                return (
+                    <Box key={index}>
+                        <Radio name={`question-${question.questionIndex}`}
+                               onChange={onChangeAnswer}
+                               checked={question.answer === option}
+                               id={`question-${question.questionIndex}-${option}`} value={option}/>
+                        <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
+                    </Box>
+                )
+            });
 
-                    <Grid size={{xs: 10}} sx={{display: 'flex'}}>
-                        {
-                            QuestionElement(question)
-                        }
-                    </Grid>
+        case 'multiple-choice':
+            return options.map((option: string, index: number) => {
+                return (
+                    <Box key={index}>
+                        <Checkbox name={`question-${question.questionIndex}`}
+                                  onChange={onChangeAnswer}
+                                  checked={question.answer.includes(option)}
+                                  id={`question-${question.questionIndex}-${option}`} value={option}/>
+                        <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
+                    </Box>
+                )
+            });
 
-                </Grid>
-            </Box>
-        )
+        case 'long-response':
+            return <TextField
+                fullWidth
+                size={'small'}
+                variant="outlined"
+                value={question.answer}
+                onChange={onChangeAnswer}
+                slotProps={{
+                    input: {
+                        style: {whiteSpace: 'nowrap', overflowX: 'auto'}
+                    }
+                }}
+            />
+
+        default:
+            return <></>
     }
-
 }
-

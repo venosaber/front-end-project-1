@@ -6,5 +6,3 @@ export {default as NewClass} from './NewClass'
 export {default as Profile} from './Profile'
 export {default as Invite} from './Invite'
 export {default as NotFound} from './NotFound'
-
-export {default as Testing} from './Testing'

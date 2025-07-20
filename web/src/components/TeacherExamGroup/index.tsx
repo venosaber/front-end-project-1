@@ -162,7 +162,7 @@ function ExamsGrid({exams, handleEditExam}: { exams: Exam[], handleEditExam: (ex
         <Grid container spacing={2} sx={{my: 3}}>
             {
                 exams.map((exam: Exam) => (
-                    <Grid key={exam.id} size={{xs: 12, sm: 6, md: 4}}>
+                    <Grid key={exam.id} size={{xs: 12, sm: 6, lg: 4}}>
                         <Box sx={{border: '1px dotted #0000ff', borderRadius: '8px', p: 1, backgroundColor: '#ffffff'}}>
                             <Box sx={{
                                 display: 'flex',

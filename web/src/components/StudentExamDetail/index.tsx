@@ -9,6 +9,7 @@ import {initState, reducer} from "./studentReducer.ts";
 import {StudentAnswers, StudentExamDialog} from '..'
 import type {Question, Answer} from "../../utils/types";
 import {isMobile, isTablet, isDesktop} from "react-device-detect";
+import {useExamFlow} from '../../contexts/ExamFlowProvider';
 import {toast} from "react-toastify";
 
 export default function StudentExamDetail() {
@@ -38,6 +39,16 @@ export default function StudentExamDetail() {
         return 'unknown';
     }
 
+    // get functions from context
+    const {startUnlockTimer, initializeExamData} = useExamFlow();
+
+    // load examGroupDetail to context
+    useEffect(() => {
+        if (examGroupId) {
+            initializeExamData(examGroupId);
+        }
+    }, [examGroupId, initializeExamData]);
+
     const [isOpenDialog, setIsOpenDialog] = useState(false);
 
     const onSubmit = async () => {
@@ -51,7 +62,7 @@ export default function StudentExamDetail() {
         const payload = {
             exam: Number(examId),
             user: userId,
-            status: 'doing',
+            status: 'completed',
             questions: state.questions.map((question: Answer) => (
                 {
                     question: question.questionId,
@@ -60,8 +71,6 @@ export default function StudentExamDetail() {
             )),
             device: state.device
         }
-
-        console.log('payload: ', payload);
 
         const response = await postMethod('/exam_result', payload, {
             headers: {
@@ -72,9 +81,12 @@ export default function StudentExamDetail() {
             toast.error('Nộp bài không thành công!');
         } else {
             toast.success('Nộp bài thành công');
-
+            // clear localStorage
             localStorage.removeItem(`lesson-${examId}-${userId}-answers`);
             localStorage.removeItem(`lesson-${examId}-${userId}-time`);
+
+            // start counting down to unlock the next exam (if any)
+            startUnlockTimer(Number(examId));
         }
     }
 
@@ -136,7 +148,7 @@ export default function StudentExamDetail() {
 
     useEffect(() => {
         // timeout
-        if (state.timeLeft <= 0) {
+        if (state.timeLeft <= 0 && isDataReady) {
             setIsOpenDialog(true);
             // automatically submit answers
             onSubmit();
@@ -147,7 +159,7 @@ export default function StudentExamDetail() {
             }, 1000);
             return () => clearInterval(interval);
         }
-    }, [])
+    }, [state.timeLeft, isDataReady]);
 
     useEffect(() => {
         if (userId && examId && isDataReady) {
