@@ -1,10 +1,18 @@
-import { useMemo, cloneElement, useState, useEffect} from "react";
+import {useMemo, cloneElement, useState, useEffect} from "react";
 import {Box, List, ListItemButton, ListItemIcon, ListItemText, Typography} from "@mui/material";
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PeopleIcon from '@mui/icons-material/People';
-import { Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
-import {Loading, MembersContent, OverviewContent, ExamGroupsList, ExamGroup as ExamGroupDetail, TeacherExamDetail} from "..";
+import {Link, Routes, Route, useParams, useLocation} from 'react-router-dom';
+import {
+    Loading,
+    MembersContent,
+    OverviewContent,
+    ExamGroupsList,
+    ExamGroup as ExamGroupDetail,
+    TeacherExamDetail,
+    TeacherMarking
+} from "..";
 import {getMethod} from "../../utils/api.ts";
 import type {Course, ExamGroup} from "../../utils/types";
 import {getValidAccessToken} from "../../router/auth.ts";
@@ -12,7 +20,7 @@ import {useNavigate} from "react-router-dom";
 
 const ClassroomLayout = () => {
 
-    const {id: classId } = useParams(); // get classId (id) from URL
+    const {id: classId} = useParams(); // get classId (id) from URL
     const [course, setCourse] = useState<Course>({
         id: 0,
         code: '',
@@ -34,19 +42,19 @@ const ClassroomLayout = () => {
                 text: "Tổng quan",
                 path: `/class/${classId}`,
                 segment: undefined,
-                icon: <DashboardIcon />
+                icon: <DashboardIcon/>
             },
             {
                 text: "Bài thi",
                 path: `/class/${classId}/exam`,
                 segment: "exam",
-                icon: <AssignmentIcon />
+                icon: <AssignmentIcon/>
             },
             {
                 text: "Thành viên",
                 path: `/class/${classId}/member`,
                 segment: "member",
-                icon: <PeopleIcon />
+                icon: <PeopleIcon/>
             }
         ];
     }, [classId]);
@@ -68,13 +76,13 @@ const ClassroomLayout = () => {
     useEffect(() => {
         const onMounted = async () => {
             const accessToken: string | null = await getValidAccessToken();
-            if(!accessToken){
+            if (!accessToken) {
                 console.error("No valid access token, redirecting to login page");
                 navigate('/login');
                 return;
             }
 
-            try{
+            try {
                 const [courseData, examGroupsData] = await Promise.all([
                     getMethod(`/master/class/${classId}`, {
                         headers: {
@@ -90,11 +98,11 @@ const ClassroomLayout = () => {
                 setCourse(courseData);
                 setExamGroups(examGroupsData);
 
-            }catch (err) {
-                console.error("Error on loading course's data: ",err);
+            } catch (err) {
+                console.error("Error on loading course's data: ", err);
                 navigate('/classes');
 
-            }finally {
+            } finally {
                 setIsLoading(false);
             }
         }
@@ -102,12 +110,14 @@ const ClassroomLayout = () => {
         onMounted();
     }, []);
 
-    if(isLoading) return <Loading />
+    if (isLoading) return <Loading/>
 
     return (
         <Box sx={{mt: '64px', height: 'calc(100vh - 64px)', display: 'flex', backgroundColor: '#f5f5f5'}}>
-            <Box sx={{width: '100%', maxWidth: 260, bgcolor: 'background.paper',
-                display: {xs: 'none', md: 'flex'}, flexDirection: 'column', justifyContent: 'space-between'}}>
+            <Box sx={{
+                width: '100%', maxWidth: 260, backgroundColor: 'background.paper',
+                display: {xs: 'none', md: 'flex'}, flexDirection: 'column', justifyContent: 'space-between'
+            }}>
                 <List component="nav" aria-label="main mailbox folders">
                     {menuItems.map((item) => {
                         const active = isActive(item.segment);
@@ -119,38 +129,41 @@ const ClassroomLayout = () => {
                                 selected={active}
                             >
                                 <ListItemIcon>
-                                    {cloneElement(item.icon, { color: active ? 'primary' : 'action' })}
+                                    {cloneElement(item.icon, {color: active ? 'primary' : 'action'})}
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={item.text}
-                                    primaryTypographyProps={{
-                                        color: active ? 'primary' : 'action'
+                                    slotProps={{
+                                        primary: {
+                                            color: active ? 'primary' : 'action'
+                                        }
                                     }}
                                 />
                             </ListItemButton>
                         );
                     })}
                 </List>
-                <CopyrightInfo />
+                <CopyrightInfo/>
             </Box>
 
             <Box component="main" sx={{flexGrow: 1, p: 3, overflowY: 'auto'}}>
                 <Routes>
                     <Route index element={<OverviewContent
                         course={course}
-                        examGroups={examGroups}/>} />
-                    <Route path="exam" element={<ExamGroupsList course={course}/>} />
-                    <Route path="member" element={<MembersContent course={course}/>} />
-                    <Route path="exam/:examGroupId" element={<ExamGroupDetail />} />
-                    <Route path="exam/:examGroupId/:examId" element={<TeacherExamDetail />} />
+                        examGroups={examGroups}/>}/>
+                    <Route path="exam" element={<ExamGroupsList course={course}/>}/>
+                    <Route path="member" element={<MembersContent course={course}/>}/>
+                    <Route path="exam/:examGroupId" element={<ExamGroupDetail/>}/>
+                    <Route path="exam/:examGroupId/:examId" element={<TeacherExamDetail/>}/>
+                    <Route path="exam/:examGroupId/marking" element={<TeacherMarking/>}/>
                 </Routes>
             </Box>
         </Box>
     )
 }
 
-function CopyrightInfo(){
-    return  (
+function CopyrightInfo() {
+    return (
         <Box sx={{p: 2, mt: 'auto'}}>
             <Typography variant="caption" color="text.secondary" sx={{display: 'block', textAlign: 'center'}}>
                 ©2024 Allrights reserved

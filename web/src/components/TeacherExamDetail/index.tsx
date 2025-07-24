@@ -7,6 +7,8 @@ import {getValidAccessToken} from "../../router/auth.ts";
 import {getMethod} from "../../utils/api.ts";
 import {initState, reducer} from "./teacherReducer.ts";
 import {TeacherAnswers} from '..'
+import {API_URL} from "../../plugins/api.ts";
+import {toast} from "react-toastify";
 
 export default function TeacherExamDetail() {
     const [state, dispatch] = useReducer(reducer, initState);
@@ -42,6 +44,7 @@ export default function TeacherExamDetail() {
             reader.readAsDataURL(file);
         });
     }
+
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         const file: File | null = e.target.files?.[0] ?? null;
         if (!file) return;
@@ -58,43 +61,45 @@ export default function TeacherExamDetail() {
             url: URL.createObjectURL(file),
             payload: String(response)
         }
-        console.log('send file: ', uploadFile);
+
         dispatch({type: 'UPLOAD_FILE', payload: uploadFile});
     }
 
     const [examGroup, setExamGroup] = useState<ExamGroup | null>(null);
 
-    const onMounted = async () => {
-        const accessToken: string | null = await getValidAccessToken();
-        if (!accessToken) {
-            console.error("No valid access token, redirecting to login page");
-            navigate('/login');
-            return;
-        }
-
-        // examId already exists => edit mode
-        if(examIdNum !== 0) {
-            const examData = await getMethod(`/exam/${examId}`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
-            });
-
-            if(examData.exam_group_id !== examGroupIdNum) {
-                console.error("Invalid exam id");
-                // handleBackToExamGroupDetail();
-            }
-            dispatch({type: 'LOAD_INITIAL_DATA', payload: examData})
-        }
-
-        const examGroupData = await getMethod(`/exam_group/${examGroupId}`, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
-        setExamGroup(examGroupData);
-    }
     useEffect(() => {
+        const onMounted = async () => {
+            const accessToken: string | null = await getValidAccessToken();
+            if (!accessToken) {
+                console.error("No valid access token, redirecting to login page");
+                navigate('/login');
+                return;
+            }
+
+            try {
+                // examId already exists => edit mode
+                if (examIdNum !== 0) {
+                    const examData = await getMethod(`/exam/${examId}`, {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    });
+
+                    dispatch({type: 'LOAD_INITIAL_DATA', payload: examData})
+                }
+
+                const examGroupData = await getMethod(`/exam_group/${examGroupId}`, {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+                setExamGroup(examGroupData);
+            }catch (e) {
+                console.error('Error on loading data: ', e);
+                toast.error('Có lỗi khi tải dữ liệu!');
+            }
+        }
+
         onMounted();
     }, []);
 
@@ -146,7 +151,7 @@ export default function TeacherExamDetail() {
                     minHeight: 0,
                 }}>
                     <Grid container spacing={2} sx={{height: "100%"}}>
-                        <Grid size={{xs: 12, lg: 6}} sx={{
+                        <Grid size={{xs: 12, lg: 5.5}} sx={{
                             height: '100%',
                             border: '1px dashed #cccccc',
                             backgroundColor: "#ffffff",
@@ -162,7 +167,12 @@ export default function TeacherExamDetail() {
                                         height: '100%'
                                     }}>
                                         <iframe
-                                            src={state.file.url}
+                                            src={
+                                            // edit mode: examIdNum !== 0
+                                            examIdNum !== 0 ?
+                                            `${API_URL}/${state.file.url}`
+                                                :`${state.file.url}`
+                                        }
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
@@ -190,7 +200,7 @@ export default function TeacherExamDetail() {
                             }
                         </Grid>
 
-                        <Grid size={{xs: 12, lg: 6}} sx={{
+                        <Grid size={{xs: 12, lg: 6.5}} sx={{
                             height: '100%',
                             border: 'none',
                             overflowY: 'auto',
@@ -204,11 +214,7 @@ export default function TeacherExamDetail() {
                         </Grid>
                     </Grid>
                 </Box>
-
-
             </Box>
-
-
         </>
     )
 }

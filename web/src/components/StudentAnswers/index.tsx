@@ -1,5 +1,5 @@
-import type {Dispatch} from 'react'
-import type {ChangeEvent} from "react";
+import type {Dispatch, ChangeEvent} from 'react'
+import {useCallback, memo} from "react";
 import type {ExamDoing, Answer, Action} from '../../utils/types';
 
 import {
@@ -17,6 +17,29 @@ interface StudentAnswersProps {
 }
 
 export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
+    const handleAnswerChange = useCallback((question: Answer) => {
+        return (e: ChangeEvent<HTMLInputElement>) => {
+            const payload = {
+                targetedAnswer: e.target.value,
+                index: question.questionIndex,
+            }
+
+            switch (question.questionType) {
+                case 'single-choice':
+                    dispatch({type: 'SINGLE_CHANGE_ANSWER', payload: payload});
+                    break;
+                case 'multiple-choice':
+                    if (e.target.checked) {
+                        dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload})
+                    } else {
+                        dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload})
+                    }
+                    break;
+                case 'long-response':
+                    dispatch({type: 'LONG_RESPONSE_ANSWER', payload: payload});
+                    break;
+            }
+        }},[dispatch]);
 
     return (
         <>
@@ -29,7 +52,10 @@ export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
                         state.questions.map((question: Answer) =>
                             (
                                 <Grid size={{xs: 6}} key={question.questionId}>
-                                    {QuestionUnit(question, dispatch)}
+                                    <MemoizedQuestionUnit question={question}
+                                                          onAnswerChange={handleAnswerChange(question)}
+                                    />
+
                                 </Grid>
                             ))
                     }
@@ -40,94 +66,76 @@ export default function StudentAnswers({state, dispatch}: StudentAnswersProps) {
     )
 }
 
-function QuestionUnit(question: Answer, dispatch: Dispatch<Action>) {
-
-    return (
-        <Box key={question.questionId} sx={{m: "10px 0 10px 10px "}}>
-            <Grid container spacing={2} style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                <Grid size={{xs: 2}}>
-                    <Typography sx={{fontSize: 20}}>C{question.questionIndex + 1}:</Typography>
-                </Grid>
-
-                <Grid size={{xs: 10}} sx={{display: 'flex'}}>
-                    {
-                        QuestionElement(question, dispatch)
-                    }
-                </Grid>
-
-            </Grid>
-        </Box>
-    )
+interface QuestionUnitProps {
+    question: Answer,
+    onAnswerChange: (e: ChangeEvent<HTMLInputElement>) => void,
 }
 
-function QuestionElement(question: Answer, dispatch: Dispatch<Action>) {
-    const onChangeAnswer = (e: ChangeEvent<HTMLInputElement>) => {
-        const payload = {
-            targetedAnswer: e.target.value,
-            index: question.questionIndex,
-        }
-
-        switch (question.questionType) {
-            case 'single-choice':
-                dispatch({type: 'SINGLE_CHANGE_ANSWER', payload: payload});
-                break;
-            case 'multiple-choice':
-                if (e.target.checked) {
-                    dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload})
-                } else {
-                    dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload})
-                }
-                break;
-            case 'long-response':
-                dispatch({type: 'LONG_RESPONSE_ANSWER', payload: payload});
-                break;
-        }
-    }
-
+const MemoizedQuestionUnit = memo(function QuestionUnit({question, onAnswerChange}: QuestionUnitProps) {
     const options: string[] = ["A", "B", "C", "D"];
+    let questionElement;
 
     switch (question.questionType) {
         case 'single-choice':
-            return options.map((option: string, index: number) => {
+            questionElement = options.map((option: string, index: number) => {
                 return (
-                    <Box key={index}>
+                    <Box key={index} sx={{display:'flex', alignItems: 'center'}}>
                         <Radio name={`question-${question.questionIndex}`}
-                               onChange={onChangeAnswer}
+                               onChange={onAnswerChange}
                                checked={question.answer === option}
                                id={`question-${question.questionIndex}-${option}`} value={option}/>
                         <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
                     </Box>
                 )
             });
+            break;
 
         case 'multiple-choice':
-            return options.map((option: string, index: number) => {
+            questionElement = options.map((option: string, index: number) => {
                 return (
-                    <Box key={index}>
+                    <Box key={index} sx={{display:'flex', alignItems: 'center'}}>
                         <Checkbox name={`question-${question.questionIndex}`}
-                                  onChange={onChangeAnswer}
+                                  onChange={onAnswerChange}
                                   checked={question.answer.includes(option)}
                                   id={`question-${question.questionIndex}-${option}`} value={option}/>
                         <label htmlFor={`question-${question.questionIndex}-${option}`}>{option}</label>
                     </Box>
                 )
             });
+            break;
 
         case 'long-response':
-            return <TextField
+            questionElement = <TextField
                 fullWidth
                 size={'small'}
                 variant="outlined"
                 value={question.answer}
-                onChange={onChangeAnswer}
+                onChange={onAnswerChange}
                 slotProps={{
                     input: {
                         style: {whiteSpace: 'nowrap', overflowX: 'auto'}
                     }
                 }}
             />
+            break;
 
-        default:
-            return <></>
+        default: questionElement = <></>;
     }
-}
+
+    return (
+        <Box sx={{m: "10px 0 10px 10px "}}>
+            <Grid container spacing={2} style={{alignItems: 'center'}}>
+                <Grid size={{xs: 2}}>
+                    <Typography sx={{fontSize: 20}}>C{question.questionIndex + 1}:</Typography>
+                </Grid>
+
+                <Grid size={{xs: 10}} sx={{display: 'flex', gap: '10px'}}>
+                    {
+                        questionElement
+                    }
+                </Grid>
+
+            </Grid>
+        </Box>
+    )
+})

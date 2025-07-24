@@ -11,6 +11,7 @@ import type {Question, Answer} from "../../utils/types";
 import {isMobile, isTablet, isDesktop} from "react-device-detect";
 import {useExamFlow} from '../../contexts/ExamFlowProvider';
 import {toast} from "react-toastify";
+import {API_URL} from "../../plugins/api.ts";
 
 export default function StudentExamDetail() {
     const [state, dispatch] = useReducer(reducer, initState);
@@ -255,7 +256,7 @@ export default function StudentExamDetail() {
                                 height: '100%'
                             }}>
                                 <iframe
-                                    src={state.examFile.url}
+                                    src={`${API_URL}/${state.examFile.url}`}
                                     style={{
                                         width: '100%',
                                         height: '100%',

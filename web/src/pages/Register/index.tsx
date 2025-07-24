@@ -1,5 +1,16 @@
 import './style.css'
-import {Box, Button, Container, Grid, IconButton, InputAdornment, Paper, TextField, Typography} from "@mui/material";
+import {
+    Box,
+    Button,
+    Container,
+    Grid,
+    IconButton,
+    InputAdornment,
+    MenuItem,
+    Paper,
+    TextField,
+    Typography
+} from "@mui/material";
 import {LogoElement} from "../../components";
 import {type ChangeEvent, type FormEvent, useState} from "react";
 import {useNavigate} from "react-router-dom";
@@ -7,12 +18,18 @@ import type {FocusEvent, MouseEvent} from "react";
 import {postMethod} from "../../utils/api.ts";
 import {toast} from 'react-toastify'
 import {Visibility, VisibilityOff} from '@mui/icons-material';
+import Select, {type SelectChangeEvent } from '@mui/material/Select';
 
 interface RegisterForm {
     name: string,
     email: string,
+    role: string,
     password: string,
     confirmPassword: string,
+}
+
+interface TouchedProps {
+    [key: string]: boolean,
 }
 
 function RegisterPage() {
@@ -23,25 +40,26 @@ function RegisterPage() {
     const [formData, setFormData] = useState<RegisterForm>({
         name: '',
         email: '',
+        role: 'student',
         password: '',
         confirmPassword: ''
     });
 
-    const [helperTexts, setHelperTexts] = useState<RegisterForm>({
+    const [helperTexts, setHelperTexts] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
     });
 
-    const [touched, setTouched] = useState({
+    const [touched, setTouched] = useState<TouchedProps>({
         name: false,
         email: false,
         password: false,
         confirmPassword: false,
     });
 
-    const validate = {
+    const validate: {[name: string]: (value: string) => boolean} = {
         name: (value: string) => {
             if (!value) {
                 setHelperTexts(prev => ({...prev, name: 'Vui lòng nhập tên của bạn!'}));
@@ -105,7 +123,7 @@ function RegisterPage() {
     const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
         onBlur(e);
-        validate[name as keyof RegisterForm](value);
+        validate[name](value);
     }
 
     const onChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +134,13 @@ function RegisterPage() {
         });
 
         validate[name as keyof RegisterForm](value);
+    }
+
+    const onChangeRole = (e: SelectChangeEvent) => {
+        setFormData({
+            ...formData,
+            role: e.target.value
+        })
     }
 
     /*********** show - hide password **************/
@@ -136,7 +161,7 @@ function RegisterPage() {
         // set all touched to true
         const curTouched = {...touched};
         Object.keys(touched).forEach((key) => {
-            curTouched[key as keyof RegisterForm] = true;
+            curTouched[key] = true;
         })
         setTouched(curTouched);
 
@@ -152,7 +177,6 @@ function RegisterPage() {
         // submit logic
         const payload = {
             ...formData,
-            role: 'student',
             status: 'confirmed'
         }
         const response = await postMethod('/master/user', payload);
@@ -166,7 +190,7 @@ function RegisterPage() {
     const onNavigateToLogin = ()=> navigate('/login');
 
     const onCancel = () => {
-        setFormData({name: '', email: '', password: '', confirmPassword: ''});
+        setFormData({name: '', email: '', password: '', confirmPassword: '', role: 'student'});
         setHelperTexts({name: '', email: '', password: '', confirmPassword: ''});
         setTouched({name: false, email: false, password: false, confirmPassword: false});
         onNavigateToLogin();
@@ -211,7 +235,7 @@ function RegisterPage() {
                                     color: 'text.primary',
                                     textAlign: 'center'
                                 }}>
-                        Đăng kí học viên
+                        Đăng kí thành viên
                     </Typography>
 
                     {/*  Register form  */}
@@ -241,6 +265,20 @@ function RegisterPage() {
                                    error={touched.email && Boolean(helperTexts.email)}
                                    helperText={touched.email && helperTexts.email}
                         />
+
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: '10px', mb: 2, mt: 2}}>
+                            <Typography sx={{flexGrow: 1, flexShrink: 0}}>Bạn là: </Typography>
+                            <Select fullWidth
+                                    size={'small'}
+                                    name={'role'}
+                                    onChange={onChangeRole}
+                                    value={formData.role}
+                            >
+                                <MenuItem value={'student'}>Học sinh</MenuItem>
+                                <MenuItem value={'teacher'}>Giáo viên</MenuItem>
+                            </Select>
+                        </Box>
+
 
                         <Typography>Mật khẩu</Typography>
                         <TextField fullWidth size={'small'} sx={{my: 1}}

@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useState, useMemo} from "react";
 import type {MouseEvent} from "react";
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -7,7 +7,6 @@ import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -19,10 +18,12 @@ import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import CloseIcon from '@mui/icons-material/Close';
 
-import {Avatar, Menu, MenuItem} from "@mui/material";
+import {Menu, MenuItem} from "@mui/material";
+import {AvatarDefault} from '..';
 
-import {useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams, Link} from "react-router-dom";
 import {deleteCookie, getUserInfo, getValidAccessToken} from "../../router/auth.ts";
 import {getMethod} from "../../utils/api.ts";
 
@@ -62,7 +63,6 @@ export const CustomLogoIcon = () => (
 );
 
 const drawerWidth = 240;
-const navItems: string[] = ['Tổng quan', 'Bài thi', 'Thành viên'];
 
 const getRoleLabel = (role: string) => {
     switch (role) {
@@ -78,29 +78,6 @@ const getRoleLabel = (role: string) => {
 }
 
 export default function DrawerAppBar() {
-    const [mobileOpen, setMobileOpen] = useState<boolean>(false);
-
-    const handleDrawerToggle = () => {
-        setMobileOpen((prevState: boolean) => !prevState);
-    };
-
-    const drawer = (
-        <Box onClick={handleDrawerToggle} sx={{textAlign: 'center'}}>
-            <Box sx={{m: 2}}>
-                <CustomLogoIcon/>
-            </Box>
-            <Divider/>
-            <List>
-                {navItems.map((item: string) => (
-                    <ListItem key={item} disablePadding>
-                        <ListItemButton sx={{textAlign: 'center'}}>
-                            <ListItemText primary={item}/>
-                        </ListItemButton>
-                    </ListItem>
-                ))}
-            </List>
-        </Box>
-    );
 
     const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
     const handleOpenUserMenu = (event: MouseEvent<HTMLElement>) => {
@@ -124,8 +101,8 @@ export default function DrawerAppBar() {
     /************** Set classname, username, role label ****************/
     const [className, setClassName] = useState<string>('');
     const [user, setUser] = useState({name: '', role: ''});
-    const displayAddClassButton = user.role === 'teacher'?'inline-flex':'none';
-    const {id} = useParams();
+    const displayAddClassButton = user.role === 'teacher' ? 'inline-flex' : 'none';
+    const {id: classId} = useParams();
 
     useEffect(() => {
         const onMounted = async () => {
@@ -141,8 +118,8 @@ export default function DrawerAppBar() {
                 setUser({name, role});
 
                 // the ClassDetail page has an id, the Classes page doesn't
-                if (id) {
-                    const {name} = await getMethod(`/master/class/${id}`, {
+                if (classId) {
+                    const {name} = await getMethod(`/master/class/${classId}`, {
                         headers: {
                             Authorization: `Bearer ${accessToken}`
                         }
@@ -157,6 +134,62 @@ export default function DrawerAppBar() {
 
         onMounted();
     }, []);
+
+    /************** For mobile **************/
+    const [mobileOpen, setMobileOpen] = useState<boolean>(false);
+
+    const handleDrawerToggle = () => {
+        setMobileOpen((prevState: boolean) => !prevState);
+    };
+
+    const navItems = useMemo(() => [
+        {
+            text: 'Trang chủ',
+            path: `/classes`
+        },
+        {
+            text: 'Tổng quan',
+            path: `/class/${classId}/`
+        },
+        {
+            text: 'Bài thi',
+            path: `/class/${classId}/exam`
+        },
+        {
+            text: 'Thành viên',
+            path: `/class/${classId}/member`
+        }
+    ], [classId]);
+
+    const isDisabledPath = (path: string) => {
+        return (!classId && path.includes(`/class/`));
+    }
+
+    const drawer = (
+        <Box>
+            <Box sx={{p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <Box sx={{p: '10px'}}/>
+                <CustomLogoIcon/>
+                <button onClick={handleDrawerToggle} style={{border: 'none', background: 'none', cursor: 'pointer'}}>
+                    <CloseIcon/>
+                </button>
+            </Box>
+            <Divider/>
+            <List component={'nav'}>
+                {navItems.map((item) => (
+                    <ListItemButton key={item.text}
+                                    component={Link}
+                                    to={item.path}
+                                    onClick={handleDrawerToggle}
+                                    sx={{textAlign: 'center'}}
+                                    disabled={isDisabledPath(item.path)}
+                    >
+                        <ListItemText primary={item.text}/>
+                    </ListItemButton>
+                ))}
+            </List>
+        </Box>
+    );
 
     return (
         <Box sx={{display: 'flex'}}>
@@ -266,11 +299,8 @@ export default function DrawerAppBar() {
                                 }
                             }}
                         >
-                            <Avatar
-                                alt="Trần Xuân Bằng"
-                                src="https://i.pravatar.cc/40?u=tranxuanbang" // Placeholder avatar
-                                sx={{width: 36, height: 36, mr: 1}}
-                            />
+                            {/*Placeholder avatar*/}
+                            <AvatarDefault fullName={user.name} width={36} height={36} mr={1}/>
                             <Box
                                 sx={{
                                     display: {xs: 'none', md: 'flex'},

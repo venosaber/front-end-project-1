@@ -1,6 +1,6 @@
-import type {FormEvent, Dispatch} from 'react'
-import type {ChangeEvent} from "react";
-import type {Question, Exam} from '../../utils/types';
+import type {FormEvent, Dispatch, ChangeEvent} from 'react'
+import {useCallback, memo} from "react";
+import type {Question, Exam, Action} from '../../utils/types';
 
 import {
     Grid,
@@ -22,7 +22,7 @@ interface TeacherAnswersProps {
     examGroupIdNum: number,
     examIdNum: number,
     state: Exam,
-    dispatch: Dispatch<any>
+    dispatch: Dispatch<Action>
 }
 
 export default function TeacherAnswers({
@@ -32,22 +32,44 @@ export default function TeacherAnswers({
                                            state,
                                            dispatch
                                        }: TeacherAnswersProps) {
-    const onNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+
+    const onNameChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         dispatch({type: 'SET_NAME', payload: e.target.value});
-    };
+    }, [dispatch]);
 
-    const onCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const onCodeChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         dispatch({type: 'SET_CODE', payload: e.target.value});
-    };
+    }, [dispatch]);
 
-    const onTotalTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const onTotalTimeChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         dispatch({type: 'SET_TOTAL_TIME', payload: e.target.value});
-    };
+    }, [dispatch]);
 
-    const onAmountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const onAmountChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const amount: number = Number(e.target.value);
         dispatch({type: 'SET_AMOUNT', payload: amount});
-    }
+    }, [dispatch]);
+
+    // provide props to change a question's type
+    const handleTypeChange = useCallback((index: number, questionType: string) => {
+        dispatch({type: 'CHANGE_QUESTION_TYPE', payload: {index, questionType}})
+    }, [dispatch]);
+
+    // provide props to change a question's correct answer
+    const handleAnswerChange = useCallback(
+        (index: number, type: 'single-choice' | 'multiple-choice', value: string, checked?: boolean) => {
+            const payload = {targetedAnswer: value, index: index};
+
+            if (type === 'single-choice') {
+                dispatch({type: 'SINGLE_CHANGE_CORRECT_ANSWER', payload: payload});
+            } else if (type === 'multiple-choice') {
+                if (checked) {
+                    dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload});
+                } else {
+                    dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload});
+                }
+            }
+        }, [dispatch]);
 
     const checkValid = () => {
         if (!state.name || !state.code) {
@@ -88,7 +110,6 @@ export default function TeacherAnswers({
             deleted_questions: state.deleted_questions
         }
 
-        console.log(payload);
         const accessToken: string | null = await getValidAccessToken();
 
         // create mode
@@ -107,13 +128,13 @@ export default function TeacherAnswers({
             }
         }
         // update mode
-        if(examIdNum){
+        if (examIdNum) {
             const response = await putMethod(`/exam/${examIdNum}`, payload, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 }
             })
-            if(!response){
+            if (!response) {
                 toast.error('Chỉnh sửa đề thi thất bại, hãy thử lại!')
                 return;
             } else {
@@ -123,7 +144,6 @@ export default function TeacherAnswers({
         }
 
     }
-
 
     return (
         <>
@@ -187,15 +207,17 @@ export default function TeacherAnswers({
                                    onChange={onAmountChange}
                         />
                     </Grid>
-
-
                 </Grid>
 
                 <Box>
                     {
                         state.questions.map((question: Question) =>
                             (
-                                QuestionUnit(question)
+                                <MemoizedQuestionUnit key={question.index}
+                                                      question={question}
+                                                      onTypeChange={handleTypeChange}
+                                                      onAnswerChange={handleAnswerChange}
+                                />
                             ))
                     }
                 </Box>
@@ -207,113 +229,96 @@ export default function TeacherAnswers({
                         type="submit"
                         sx={{fontWeight: 600, mt: 2}}
                     >
-                        {examIdNum?'Chỉnh sửa đề bài':'Tạo đề bài'}
+                        {examIdNum ? 'Chỉnh sửa đề bài' : 'Tạo đề bài'}
                     </Button>
                 </Box>
             </Box>
         </>
     )
 
-
-    function QuestionElement(question: Question) {
-        const onChangeAnswer = (e: ChangeEvent<HTMLInputElement>) => {
-            const payload = {
-                targetedAnswer: e.target.value,
-                index: question.index
-            }
-
-            if (question.type === 'single-choice') {
-                dispatch({type: 'SINGLE_CHANGE_CORRECT_ANSWER', payload: payload});
-            }
-            if (question.type === 'multiple-choice') {
-                if (e.target.checked) {
-                    dispatch({type: 'MULTIPLE_CHECK_OPTION', payload: payload})
-                } else {
-                    dispatch({type: 'MULTIPLE_UNCHECK_OPTION', payload: payload})
-                }
-            }
-        }
-
-        const options: string[] = ["A", "B", "C", "D"];
-
-        switch (question.type) {
-            case 'single-choice':
-                return options.map((option: string, index: number) => {
-                    return (
-                        <Box key={index}>
-                            <Radio name={`question-${question.index}`}
-                                   onChange={onChangeAnswer}
-                                   checked={question.correct_answer === option}
-                                   id={`question-${question.index}-${option}`} value={option}/>
-                            <label htmlFor={`question-${question.index}-${option}`}>{option}</label>
-                        </Box>
-                    )
-                });
-
-            case 'multiple-choice':
-                return options.map((option: string, index: number) => {
-                    return (
-                        <Box key={index}>
-                            <Checkbox name={`question-${question.index}`}
-                                      onChange={onChangeAnswer}
-                                      checked={question.correct_answer.includes(option)}
-                                      id={`question-${question.index}-${option}`} value={option}/>
-                            <label htmlFor={`question-${question.index}-${option}`}>{option}</label>
-                        </Box>
-                    )
-                });
-
-            case 'long-response':
-                return <TextField size={'small'}
-                                  value={'Học sinh tự điền'}
-                                  disabled/>;
-
-            default:
-                return <></>
-        }
-    }
-
-    function QuestionUnit(question: Question) {
-        const onChangeType = (e: SelectChangeEvent) => {
-            const questionType: string = e.target.value;
-            const payload = {
-                questionType: questionType,
-                index: question.index
-            }
-            dispatch({type: 'CHANGE_QUESTION_TYPE', payload: payload});
-
-        };
-
-        return (
-            <Box key={question.index} sx={{m: "10px 0 10px 10px "}}>
-                <Grid container spacing={2} style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                    <Grid size={{xs:1.5, lg:2}}>
-                        <Typography sx={{fontSize: 20}}>Câu {question.index + 1}:</Typography>
-                    </Grid>
-
-                    <Grid size={{xs:4, lg:4}}>
-                        <Select fullWidth
-                                size={'small'}
-                                name={'questionType'}
-                                onChange={onChangeType}
-                                defaultValue={question.type}
-                        >
-                            <MenuItem value={'single-choice'}>Chọn một đáp án</MenuItem>
-                            <MenuItem value={'multiple-choice'}>Chọn nhiều đáp án</MenuItem>
-                            <MenuItem value={'long-response'}>Điền vào chỗ trống</MenuItem>
-                        </Select>
-                    </Grid>
-
-                    <Grid size={{xs:6.5, lg:6}} sx={{display: 'flex'}}>
-                        {
-                            QuestionElement(question)
-                        }
-                    </Grid>
-
-                </Grid>
-            </Box>
-        )
-    }
-
 }
+
+interface QuestionUnitProps {
+    question: Question,
+    onTypeChange: (index: number, questionType: string) => void,
+    onAnswerChange: (index: number, type: 'single-choice' | 'multiple-choice', value: string, checked?: boolean) => void,
+}
+
+const MemoizedQuestionUnit = memo(function QuestionUnit({question, onTypeChange, onAnswerChange}: QuestionUnitProps) {
+
+    const handleTypeChange = (e: SelectChangeEvent) => {
+        onTypeChange(question.index, e.target.value);
+    }
+
+    const handleAnswerChange = (e: ChangeEvent<HTMLInputElement>) => {
+        onAnswerChange(question.index, question.type as 'single-choice' | 'multiple-choice', e.target.value, e.target.checked)
+    }
+
+    const options: string[] = ["A", "B", "C", "D"];
+
+    let questionElement;
+    switch (question.type) {
+        case 'single-choice':
+            questionElement = options.map((option: string, index: number) => {
+                return (
+                    <Box key={index} sx={{display: 'flex', alignItems: 'center'}}>
+                        <Radio name={`question-${question.index}`}
+                               onChange={handleAnswerChange}
+                               checked={question.correct_answer === option}
+                               id={`question-${question.index}-${option}`} value={option}/>
+                        <label htmlFor={`question-${question.index}-${option}`}>{option}</label>
+                    </Box>
+                )
+            });
+            break;
+
+        case 'multiple-choice':
+            questionElement = options.map((option: string, index: number) => {
+                return (
+                    <Box key={index} sx={{display: 'flex', alignItems: 'center'}}>
+                        <Checkbox name={`question-${question.index}`}
+                                  onChange={handleAnswerChange}
+                                  checked={question.correct_answer.includes(option)}
+                                  id={`question-${question.index}-${option}`} value={option}/>
+                        <label htmlFor={`question-${question.index}-${option}`}>{option}</label>
+                    </Box>
+                )
+            });
+            break;
+
+        case 'long-response':
+            questionElement = <TextField size={'small'} value={'Học sinh tự điền'} disabled/>;
+            break;
+
+        default:
+            questionElement = <></>
+    }
+
+    return (
+        <Box sx={{m: "10px 0 10px 10px "}}>
+            <Grid container spacing={2} alignItems={'center'}>
+                <Grid size={{xs: 1.5, lg: 2}}>
+                    <Typography sx={{fontSize: 20}}>Câu {question.index + 1}:</Typography>
+                </Grid>
+
+                <Grid size={{xs: 4, lg: 4}}>
+                    <Select fullWidth size={'small'}
+                            name={'questionType'}
+                            onChange={handleTypeChange}
+                            value={question.type}
+                    >
+                        <MenuItem value={'single-choice'}>Chọn một đáp án</MenuItem>
+                        <MenuItem value={'multiple-choice'}>Chọn nhiều đáp án</MenuItem>
+                        <MenuItem value={'long-response'}>Điền vào chỗ trống</MenuItem>
+                    </Select>
+                </Grid>
+
+                <Grid size={{xs: 6.5, lg: 6}} sx={{display: 'flex', gap: '5px'}}>
+                    {questionElement}
+                </Grid>
+
+            </Grid>
+        </Box>
+    )
+})
 

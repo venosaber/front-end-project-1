@@ -1,8 +1,9 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useMemo} from 'react';
 import type {ChangeEvent} from 'react';
 import {Box, Button, Grid, InputAdornment, Paper, TextField, Typography} from '@mui/material';
 import {Add as AddIcon, Description as DescriptionIcon, Search as SearchIcon} from '@mui/icons-material';
 import type {ExamGroup, Course} from '../../utils/types';
+import {Loading} from '..';
 
 import dayjs from 'dayjs';
 import {getMethod} from "../../utils/api.ts";
@@ -27,20 +28,27 @@ export default function ExamsContent({course}: { course: Course }) {
     };
 
     const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
+
+    const filteredExamGroups: ExamGroup[] = useMemo(() =>
+            examGroups.filter(examGroup =>
+                examGroup.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        , [examGroups, searchQuery]);
+
     function toDateOnly(date: Date): Date {
         return new Date(date.getFullYear(), date.getMonth(), date.getDate());
     }
 
     const today: Date = toDateOnly(new Date());
 
-    const openExamGroups: ExamGroup[] = examGroups.filter(
+    const openExamGroups: ExamGroup[] = filteredExamGroups.filter(
         examGroup => toDateOnly(new Date(examGroup.start_time)) <= today
     );
 
-    const notOpenExamGroups: ExamGroup[] = examGroups.filter(
+    const notOpenExamGroups: ExamGroup[] = filteredExamGroups.filter(
         examGroup => toDateOnly(new Date(examGroup.start_time)) > today
     );
 
+    const [isLoading, setIsLoading] = useState(true);
     const onMounted = async () => {
         const accessToken: string | null = await getValidAccessToken();
         if (!accessToken) {
@@ -56,67 +64,72 @@ export default function ExamsContent({course}: { course: Course }) {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        setExamGroups(examGroupsData);
+        setExamGroups(examGroupsData)
+        setIsLoading(false);
     }
 
     useEffect(() => {
         onMounted();
     }, []);
 
+    if (isLoading) return <Loading/>
+
     return (
         <>
             <Box sx={{p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh'}}>
                 {/* Header with search and create button */}
                 <Box sx={{
-                    display: 'flex',
+                    display: {xs: 'block', md: 'flex'},
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 3
+                    gap: '10px'
                 }}>
-                    <Typography variant="h5" fontWeight="bold" color="text.primary">
+                    <Typography variant="h5" fontWeight="bold" color="text.primary"
+                                sx={{display: {xs: 'block', md: 'inline-flex'}, mb: 2}}
+                    >
                         Danh sách Bài thi
                     </Typography>
 
-                    <Box sx={{display: 'flex', gap: 2}}>
+
+                    <Box sx={{display: {xs: 'block', md: 'inline-flex'}}}>
+                        <Box sx={{display: {xs: 'block', sm: 'inline-flex'}, gap: 2}}>
                         <TextField
                             placeholder="Tìm kiếm"
                             variant="outlined"
                             size="small"
                             value={searchQuery}
                             onChange={handleSearchChange}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon color="action"/>
-                                    </InputAdornment>
-                                ),
-                                sx: {
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: '#90caf9',
-                                    },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: '#42a5f5',
-                                    },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                        borderColor: '#42a5f5',
-                                    },
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon color="action"/>
+                                        </InputAdornment>
+                                    )
                                 },
+
                             }}
-                            sx={{width: 300, backgroundColor: "#fff"}}
+                            sx={{backgroundColor: "#fff", flexShrink: 0, minWidth: '300px', mb: 2}}
                         />
 
                         <Button
                             variant="contained"
                             color="primary"
-                            startIcon={<AddIcon/>}
                             onClick={handleCreateExamGroup}
                             // not allowing students to create an exam group
-                            sx={{display: userRole === 'student'?'none':'inline-flex'}}
+                            sx={{
+                                display: userRole === 'student' ? 'none' : {xs: 'block', sm: 'inline-flex'},
+                                flexShrink: 0, mb: 2
+                            }}
                         >
-                            Tạo bài thi
+                            <Box sx={{display: 'flex', alignItems: 'center ', gap: '5px'}}>
+                                <AddIcon/> <Typography>Tạo bài thi</Typography>
+                            </Box>
                         </Button>
+                        </Box>
                     </Box>
                 </Box>
+                {/*</Grid>*/}
 
                 {/* Active Tests Section */}
                 <Box sx={{mb: 4}}>
@@ -133,7 +146,7 @@ export default function ExamsContent({course}: { course: Course }) {
                 </Box>
 
                 {/* Not Active Tests Section - won't allow students to see */}
-                <Box sx={{display: userRole === 'student'?'none':'block'}}>
+                <Box sx={{display: userRole === 'student' ? 'none' : 'block'}}>
                     <Typography
                         variant="subtitle1"
                         fontWeight="600"
@@ -167,7 +180,7 @@ function ExamGroupsGrid({examGroups, classId}: { examGroups: ExamGroup[], classI
             <Grid container spacing={2}>
                 {examGroups.length === 0 && (<>0</>)}
                 {examGroups.map((examGroup: ExamGroup) => (
-                    <Grid size={{xs: 12, md: 6, lg: 4}} key={examGroup.id} sx={{borderLeft: '5px solid #0000ff'}}>
+                    <Grid size={{xs: 12, md: 6, lg: 4}} key={examGroup.id} sx={{border: '1px solid #0000ff'}}>
 
                         <Paper elevation={0}>
                             <Link to={`/class/${classId}/exam/${examGroup.id}`}

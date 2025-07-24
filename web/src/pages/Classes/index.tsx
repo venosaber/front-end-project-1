@@ -5,7 +5,8 @@ import AddIcon from '@mui/icons-material/Add';
 import {CourseGrid} from '../../components';
 import type {Course} from '../../utils/types';
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useMemo} from 'react';
+import type {ChangeEvent} from 'react';
 import {Loading} from '../../components';
 import {getMethod} from "../../utils/api.ts";
 import {useNavigate} from "react-router-dom";
@@ -20,7 +21,13 @@ function Classes() {
     const [user, setUser] = useState({name: '', role: ''});
     const displayAddClassButton = user.role === 'teacher'?'inline-flex':'none';
     const [courses, setCourses] = useState<Course[]>([]);
-    const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+
+    const [searchStr, setSearchStr] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
+    const filteredCourses: Course[] = useMemo(()=> courses.filter(course => {
+        return course.name.toLowerCase().includes(searchStr.toLowerCase());
+    }),[courses, searchStr]);
 
     useEffect(() => {
         const onMounted = async () => {
@@ -44,14 +51,14 @@ function Classes() {
             }catch (err) {
                 console.error("Error on loading courses: ",err);
             }finally {
-                setIsLoadingCourses(false);
+                setIsLoading(false);
             }
         }
 
         onMounted();
     }, []);
 
-    if(isLoadingCourses) return <Loading />
+    if(isLoading) return <Loading />
 
     return (
         <>
@@ -70,6 +77,8 @@ function Classes() {
 
                     <Box sx={{ml: 'auto', mr: 2, my: 2, minWidth: '300px'}}>
                         <TextField
+                            value={searchStr}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchStr(e.target.value)}
                             fullWidth
                             variant="outlined"
                             placeholder="Tìm kiếm"
@@ -118,7 +127,7 @@ function Classes() {
 
                 {/* Course grid */}
                 <Box sx={{mt: 3}}>
-                    <CourseGrid courses={courses}/>
+                    <CourseGrid courses={filteredCourses}/>
                 </Box>
             </Container>
         </>

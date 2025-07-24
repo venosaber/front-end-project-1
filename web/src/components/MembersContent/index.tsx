@@ -30,7 +30,7 @@ export default function MembersContent({course}: MembersContentProps) {
     });
 
     return (
-        <Box sx={{mt: 3}}>
+        <Box sx={{mt: 3, overflowY: 'auto'}}>
             <TableContainer component={Paper} elevation={0} sx={{p: 2}}>
                 <Typography variant="h6" fontWeight="bold" sx={{mb: 1}} color={'primary'}>
                     Danh sách thành viên

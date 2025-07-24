@@ -191,7 +191,6 @@ export default function ExamGroupDialog({
 
     const onDelete = async () => {
         const accessToken: string | null = await getValidAccessToken();
-        console.log(examGroup);
         const response = await deleteMethod(`/exam_group/${examGroup?.id}`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`

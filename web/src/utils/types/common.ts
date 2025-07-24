@@ -32,7 +32,7 @@ export interface ExamGroup {
     clas: number,
     start_time: string,
     await_time: number,
-    created_at: string,
+    created_at: Date,
     is_once: boolean,
     is_save_local: boolean
 }
@@ -70,10 +70,10 @@ export interface Answer{
 }
 
 export interface AnswerResult{
-    id: number,
+    id: number | null,
     question: number,
     index: number,
-    answer: string,
+    answer: string | null,
     is_correct: boolean[] | null,
     type: string
 }
@@ -99,12 +99,16 @@ export interface ExamResult{
     user: number,
     status: string,
     old_answer: null,
-    answers: [],
+    answers: AnswerResult[],
     number_of_question: number,
     number_of_correct_answer: number,
     score: number | null,
     created_at: Date,
     device: string
+}
+
+export interface StudentResultGroup extends User{
+    results: ExamResult[]
 }
 
 export interface Action {
