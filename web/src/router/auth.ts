@@ -52,12 +52,27 @@ export const refreshToken = async () => {
         const payload = { refresh: refreshToken }
         const {access: newAccessToken, refresh: newRefreshToken } = await postMethod('/login/get_new_token', payload);
 
-        setCookie('accessToken', newAccessToken, 15 * 60); // 15 minutes
+        const {exp} = getUserInfo(newAccessToken); // decode JWT token
+        const now: number = Math.floor(Date.now() / 1000);
+
+        const maxAge: number = exp - now;
+        setCookie('accessToken', newAccessToken, maxAge);
 
         // Conditionally set refreshToken depending on rememberMe
         if (newRefreshToken) {
             if (localStorage.getItem('rememberMe') === 'true') {
-                setCookie('refreshToken', newRefreshToken, 7 * 24 * 60 * 60); // 7 days
+
+                const expiresAt: number = parseInt(localStorage.getItem('refreshTokenExpiresAt') || '0');
+                const remainingMs: number = expiresAt - Date.now();
+                if (remainingMs > 0) {
+                    setCookie('refreshToken', newRefreshToken, Math.floor(remainingMs/1000));
+                } else {
+                    // refreshToken is already expired
+                    deleteCookie('refreshToken');
+                    localStorage.removeItem('refreshTokenExpiresAt');
+                    throw new Error('Refresh token is expired');
+                }
+
             } else {
                 setCookie('refreshToken', newRefreshToken); // session cookie
             }

@@ -273,6 +273,7 @@ function RegisterPage() {
                                     name={'role'}
                                     onChange={onChangeRole}
                                     value={formData.role}
+                                    sx={{textAlign: 'center'}}
                             >
                                 <MenuItem value={'student'}>Học sinh</MenuItem>
                                 <MenuItem value={'teacher'}>Giáo viên</MenuItem>

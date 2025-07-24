@@ -10,7 +10,7 @@ import {IconButton, InputAdornment} from "@mui/material";
 import {Visibility, VisibilityOff} from "@mui/icons-material";
 
 import {postMethod} from "../../utils/api";
-import {setCookie} from "../../router/auth.ts";
+import {setCookie, getUserInfo} from "../../router/auth.ts";
 import { toast } from 'react-toastify';
 
 interface LoginForm {
@@ -118,11 +118,19 @@ function LoginPage() {
             toast.success('Đăng nhập thành công!');
             const {access: accessToken, refresh: refreshToken} = response;
             /********* save tokens in cookie ********/
-            setCookie('accessToken', accessToken, 60 * 15); // 15 minutes
+            const now: number = Math.floor(Date.now() / 1000);
+
+            const {exp} = getUserInfo(accessToken); // decode JWT token
+            const maxAge: number = exp - now;
+            setCookie('accessToken', accessToken, maxAge);
 
             // "remember me" feature
             if(rememberMe){
-                setCookie('refreshToken', refreshToken, 60 * 60 * 24 * 7); // a week
+                const refreshMaxAgeMs: number = 7 * 24 * 60 * 60 * 1000; // a week
+                const expiresAt: number = now + refreshMaxAgeMs;
+                localStorage.setItem('refreshTokenExpiresAt', expiresAt.toString());
+
+                setCookie('refreshToken', refreshToken, refreshMaxAgeMs/1000);
                 localStorage.setItem('rememberMe', 'true');
             }else{
                 setCookie('refreshToken', refreshToken);  // session cookie
