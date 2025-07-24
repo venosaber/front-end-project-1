@@ -86,8 +86,8 @@ export default function ExamGroupDialog({
                 return false;
             }
 
-            if (isNaN(Number(value))) {
-                setHelperTexts(prev => ({...prev, awaitTime: 'Phải nhập giá trị số!'}));
+            if (isNaN(Number(value)) || Number(value) < 0) {
+                setHelperTexts(prev => ({...prev, awaitTime: 'Phải nhập số không âm!'}));
                 return false;
             }
 
